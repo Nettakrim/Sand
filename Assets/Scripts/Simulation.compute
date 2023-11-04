@@ -37,17 +37,37 @@ void copyPixel(uint2 pos) {
     }
 }
 
-bool tileFree(uint4 data) {
+bool tileFree(uint4 data, uint sand) {
     //0001 wall
     //1000 miner
-    //non ---00 sand
+    //non-0 sand
     //11-- filters
-    //return false;
+
     return data.g == 0 && data.b != 1 && data.b != 16;
 }
 
 uint4 updateTile(uint4 data) {
-    //this is where miners might create sand
+    //splitter: flip 3rd bit if sand is on tile
+    if (data.b == 3 && data.g > 0) data.a ^= 4;
+
+    //miner: increment 3rd-5th bits, if at max count and theres no sand on the miner, create sand and reset count
+    if (data.b == 8) {
+        if (data.a < 28) data.a += 4;
+        else if (data.g == 0) {
+            data.a -= 28;
+            data.g = data.r;
+        }
+    }
+
+    //painter: increment 3rd-5th bits, if at max, change sand color and reset count - only do this if sand is on the painter
+    if (data.b == 9 && data.g > 0) {
+        if (data.a < 28) data.a += 4;
+        else {
+            data.a -= 28;
+            data.g = (data.g & ~28) | (data.a & 28);
+        }
+    }
+
     return data;
 }
 
@@ -57,22 +77,36 @@ int getTileMovement(uint4 data) {
     //1  01 left
     //2  10 up
     //3  11 down
+
+    //conveyor: movement direction directly corresponds to component data
+    //miner: also the same, however it has bits 000-- that need to get masked
+    //this is also the case for painter and all filters, since they keep sand moving in the same direction
+    if (data.b == 2 || data.b == 8 || data.b >= 12) return data.a&3;
+
+    //splitter: movment is based on direction entered
+    if (data.b == 3) {
+        //flip axis (2nd bit) of sand entry
+        //conditionally flip direction (1st bit)
+        return (data.a ^ (2 + (data.a << 2)))&3;
+    }
+
+    //painter only allows sand through if its timer is 0
+    if (data.b == 9) {
+        return data.a < 4 ? (data.a & 3) : -1;
+    }
+
     return 3;
 }
 
 uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
     data.g = sand;
-    return data;
-}
 
-[numthreads(8,8,1)]
-void CSInit (uint3 id : SV_DispatchThreadID)
-{
-    if (id.y%16 == 0) {
-        Result[id.xy] = encode(uint4(0,((id.x%16)+48)*4,0,0));
-    } else {
-        Result[id.xy] = encode(uint4(0,0,0,0));
-    }
+    //splitter: set first 2 bits to movement direction
+    //this is also the case for all filters
+    //and for painters
+    if (data.b == 3 || data.b >= 12 || data.b == 9) data.a = (data.b & ~3) | direction;
+
+    return data;
 }
 
 [numthreads(1,1,1)]
@@ -108,10 +142,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             else if (direction == 3) tileInDirection = down;
             else tileInDirection = uint4(0,0,1,0);
 
-            if (tileFree(tileInDirection)) {
+            if (tileFree(tileInDirection, current.g)) {
                 tileInDirection = sandEnteredTile(current.g, direction, tileInDirection);
                 current.g = 0;
-                //current.b = 255;
             }
 
             if (direction == 0)      right = tileInDirection;
@@ -120,13 +153,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             else if (direction == 3) down  = tileInDirection;
         }
     }
-
-    //if (current.b > 0) {
-    //    current.b = current.b - 1;
-    //}
-
-    //current.r = tileFree(getPixel(leftPos)) ? 0 : 255;
-    current.r = 0;
 
     copyPixel(uint2(pos.x+uint(1), pos.y+uint(1)));
     copyPixel(uint2(pos.x+uint(1), pos.y-uint(1)));
@@ -141,3 +167,30 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     setPixel(pos, current);
 }
+
+[numthreads(8,8,1)]
+void CSInit (uint3 id : SV_DispatchThreadID)
+{
+    uint sand = 0;
+    uint component = 2;
+    uint componentData = 0;
+
+    int x = int(id.x)-127;
+    int y = int(id.y)-127;
+
+    componentData += x>y ? 0 : 1;
+    componentData += (x>y ^ x>-y) ? 0 : 2;
+
+    if (id.y%16 == 0 && id.x%2 == 0) {
+        sand = ((id.x%16)+16)*8;
+    }
+
+    Result[id.xy] = encode(uint4(0, sand, component, componentData));
+}
+
+
+//TODO:
+
+// filters
+// shipping point
+// crossroads
