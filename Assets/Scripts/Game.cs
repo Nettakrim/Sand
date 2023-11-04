@@ -22,6 +22,10 @@ public class Game : MonoBehaviour
     private TetrisBag<int[]> offsets;
 
     void Start() {
+        for (int a = 0; a < 8; a++) {
+            Debug.Log(a+" "+((a ^ (2 + ((a >> 2) ^ ((a >> 1)&1))))&3));
+        }
+
         CreateRenderTexture(ref texA, 256, 256);
         CreateRenderTexture(ref texB, 256, 256);
         material.SetTexture("_TexA", texA);
