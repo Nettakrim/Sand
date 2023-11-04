@@ -65,6 +65,11 @@ uint4 updateTile(uint4 data) {
         }
     }
 
+    //gate: set a length 64 bool buffer to do implicit or?
+    if (data.b == 15) {
+        //todo: make it work
+    }
+
     return data;
 }
 
@@ -127,6 +132,7 @@ uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
 
     //bins and shipping points instantly destroy the sand
     if (data.b == 10 || data.b == 11) {
+        //todo: make shipping points work (increment a buffer with a length of 24?)
         data.g = 0;
     }
 
