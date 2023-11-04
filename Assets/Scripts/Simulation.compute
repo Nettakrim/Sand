@@ -37,7 +37,7 @@ void copyPixel(uint2 pos) {
     }
 }
 
-bool tileFree(uint4 data, uint sand) {
+bool tileFree(uint4 data) {
     //0001 wall
     //1000 miner
     //non-0 sand
@@ -110,18 +110,18 @@ int getTileMovement(uint4 data) {
         return data.a&3;
     }
 
-    return 3;
+    return -1;
 }
 
 uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
     if (data.b >= 4 && data.b <= 7) {
         if (direction < 2) {
             //if x axis, replace -X bit with positiveness
-            data.b = (data.b & ~1) + direction;
+            data.b = (data.b & ~1) + (direction&1);
             data.g = sand;
         } else {
             //if y axis, replace X- bit with positiveness
-            data.b = (data.b & ~2) + (direction&1) << 2;
+            data.b = (data.b & ~2) + ((direction&1) << 1);
             data.a = sand;
         }
         return data;
@@ -181,7 +181,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
                 else if (direction == 3) tileInDirection = down;
                 else tileInDirection = uint4(0,0,1,0);
 
-                if (tileFree(tileInDirection, current.g)) {
+                if (tileFree(tileInDirection)) {
                     tileInDirection = sandEnteredTile(current.g, direction, tileInDirection);
                     current.g = 0;
                 }
@@ -203,9 +203,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
         if (current.g > 0) {
             //x axis
-            bool positive = directions&1 == 0;
+            bool positive = (directions&1) == 0;
             uint4 tileInDirection = positive ? right : left;
-            if (tileFree(tileInDirection, current.g)) {
+            if (tileFree(tileInDirection) || (tileInDirection.b >= 4 && tileInDirection.b <= 7 && tileInDirection.g == 0)) {
                 tileInDirection = sandEnteredTile(current.g, positive ? 0 : 1, tileInDirection);
                 current.g = 0;
             }
@@ -220,8 +220,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             //y axis
             bool positive = directions < 2;
             uint4 tileInDirection = positive ? up : down;
-            if (tileFree(tileInDirection, current.a)) {
-                tileInDirection = sandEnteredTile(current.a, positive ? 0 : 1, tileInDirection);
+            if (tileFree(tileInDirection) || (tileInDirection.b >= 4 && tileInDirection.b <= 7 && tileInDirection.a == 0)) {
+                tileInDirection = sandEnteredTile(current.a, positive ? 2 : 3, tileInDirection);
                 current.a = 0;
             }
             if (positive) {
@@ -257,48 +257,61 @@ void CSInit (uint3 id : SV_DispatchThreadID)
     int x = int(id.x)-128;
     int y = int(id.y)-128;
 
-    if (x >= 0) {
-        if (y >= 0) {
-            componentData = (x >= y) ? 3 : 0;
-        } else {
-            componentData = (x >= -y) ? 3 : 1;
-        }
-    } else {
-        if (y >= 0) {
-            componentData += (-x > y+1) ? 2 : 0;
-        } else {
-            componentData += (-x > -y) ? 1 : 2;
-        }
-    }
+//    if (x >= 0) {
+//        if (y >= 0) {
+//            componentData = (x >= y) ? 3 : 0;
+//        } else {
+//            componentData = (x >= -y) ? 3 : 1;
+//        }
+//    } else {
+//        if (y >= 0) {
+//            componentData += (-x > y+1) ? 2 : 0;
+//        } else {
+//            componentData += (-x > -y) ? 1 : 2;
+//        }
+//    }
+//
+//    if (y == 0 && x > 10 && id.x%5 == 0) {
+//        component = 8;
+//        componentData = 3;
+//        ground = 1;
+//    }
+//
+//    if (y == 0 && x < -10 && id.x%5 == 0) {
+//        component = 3;
+//        componentData = 0;
+//    }
+//
+//    if (x == 0 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
+//        component = 9;
+//        componentData = 0;
+//        ground = ((uint(x^y)*67)%8)<<2;
+//    }
+//    if (x == 1 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
+//        component = 3;
+//        componentData = 0;
+//    }
+//    if (x == 1 && y > 10 && id.y%5 == 0) {
+//        component = 1;
+//        componentData = 0;
+//    }
 
-    if (y == 0 && x > 10 && id.x%5 == 0) {
+    if (-x == y && x < 0) {
         component = 8;
-        componentData = 3;
-        ground = 1;
+        componentData = 0;
+        ground = 255;
+    } else if (-x == y && x > 0) {
+        component = 8;
+        componentData = 2;
+        ground = 255;
+    } else {
+        component = 4;
+        componentData = 0;
     }
-
-    if (y == 0 && x < -10 && id.x%5 == 0) {
+    if (x > 100 || y > 100) {
         component = 3;
         componentData = 0;
     }
-
-    if (x == 0 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
-        component = 9;
-        componentData = 0;
-        ground = ((uint(x^y)*67)%8)<<2;
-    }
-    if (x == 1 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
-        component = 3;
-        componentData = 0;
-    }
-    if (x == 1 && y > 10 && id.y%5 == 0) {
-        component = 1;
-        componentData = 0;
-    }
-
-    //if (id.y%8 == 0) {
-    //    sand = ((id.x%16)+16)*8;
-    //}
 
     Result[id.xy] = encode(uint4(ground, sand, component, componentData));
 }
