@@ -17,8 +17,9 @@ public class Game : MonoBehaviour
 
     private bool step = false;
 
-    private int[] offset = new int[2];
     private int[] size = new int[2];
+
+    private TetrisBag<int[]> offsets;
 
     void Start() {
         CreateRenderTexture(ref texA, 256, 256);
@@ -26,6 +27,12 @@ public class Game : MonoBehaviour
         kernalMain = computeShader.FindKernel("CSMain");
         kernalInit = computeShader.FindKernel("CSInit");
         size = new int[]{texA.width, texA.height};
+
+        offsets = new TetrisBag<int[]>(new int[][]{
+            new int[]{0,0}, new int[]{1,0}, new int[]{2,0},
+            new int[]{0,1}, new int[]{1,1}, new int[]{2,1},
+            new int[]{0,2}, new int[]{1,2}, new int[]{2,2}
+        }, true);
 
         Reset();
     }
@@ -54,12 +61,7 @@ public class Game : MonoBehaviour
     }
 
     void Simulate(RenderTexture i, RenderTexture o) {
-        offset[0] = (offset[0]+1)%3;
-        if (offset[0] == 0) {
-            offset[1] = (offset[1]+1)%3;
-        }
-
-        SimulationStep(i, o, offset);
+        SimulationStep(i, o, offsets.Get());
 
         material.SetTexture("_MainTex", o);
     }
