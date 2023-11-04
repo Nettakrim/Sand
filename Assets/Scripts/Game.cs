@@ -24,6 +24,8 @@ public class Game : MonoBehaviour
     void Start() {
         CreateRenderTexture(ref texA, 256, 256);
         CreateRenderTexture(ref texB, 256, 256);
+        material.SetTexture("_TexA", texA);
+        material.SetTexture("_TexB", texB);
         kernalMain = computeShader.FindKernel("CSMain");
         kernalInit = computeShader.FindKernel("CSInit");
         size = new int[]{texA.width, texA.height};
@@ -63,7 +65,7 @@ public class Game : MonoBehaviour
     void Simulate(RenderTexture i, RenderTexture o) {
         SimulationStep(i, o, offsets.Get());
 
-        material.SetTexture("_MainTex", o);
+        material.SetFloat("_Step", step ? 1 : 0);
     }
 
     void SimulationStep(RenderTexture i, RenderTexture o, int[] offset) {
