@@ -70,6 +70,11 @@ uint4 updateTile(uint4 data) {
         //todo: make it work
     }
 
+    if (data.b == 3 && data.g > 0) {
+        //flip 3rd bit while sand is on it, this swaps the target direction
+        data.a ^= 4;
+    }
+
     return data;
 }
 
@@ -87,12 +92,11 @@ int getTileMovement(uint4 data) {
 
     //splitter: movment is based on direction entered
     if (data.b == 3) {
-        //flip 3rd bit - tilemovement is only called for tiles with sand on them, so this should properly
-        data.a ^= 4;
-
         //flip axis (2nd bit) of sand entry
         //conditionally flip direction (1st bit) if 3rd bit is set
-        return (data.a ^ (2 + (data.a << 2)))&3;
+        return (data.a ^ (2 + (data.a >> 2)))&3;
+        //because the 3rd bit is xored, this should mean it always alternates between left/right relative to the sand direction
+        //that means if sand from up and down are alternating in when they arrive, they should all get sent the same way
     }
 
     //painter only allows sand through if its timer is 0
@@ -128,7 +132,7 @@ uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
     //splitter: set first 2 bits to movement direction
     //this is also the case for all filters and the gate
     //and for painters
-    if (data.b == 3 || data.b >= 12 || data.b == 9) data.a = (data.b & ~3) | direction;
+    if (data.b == 3 || data.b >= 12 || data.b == 9) data.a = (data.a & ~3) | direction;
 
     //bins and shipping points instantly destroy the sand
     if (data.b == 10 || data.b == 11) {
@@ -267,10 +271,15 @@ void CSInit (uint3 id : SV_DispatchThreadID)
         }
     }
 
-    if (y == 0 && x > 10) {
+    if (y == 0 && x > 10 && id.x%5 == 0) {
         component = 8;
         componentData = 3;
         ground = (((uint(x)*123)%16)+16)*8;
+    }
+
+    if (y == 0 && x < -10 && id.x%5 == 0) {
+        component = 3;
+        componentData = 0;
     }
 
     //if (id.y%8 == 0) {

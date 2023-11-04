@@ -50,6 +50,10 @@ SubShader {
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 col = lerp(tex2D(_TexA, i.texcoord), tex2D(_TexB, i.texcoord), _Step);
+                col.b *= 25;
+                if (col.b*255 > 4) {
+                    col.r = col.a * 25;
+                }
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 UNITY_OPAQUE_ALPHA(col.a);
                 return col;
