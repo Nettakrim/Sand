@@ -54,6 +54,7 @@ SubShader {
                 if (col.b*255 > 4) {
                     col.r = col.a * 25;
                 }
+                col.g *= 32;
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 UNITY_OPAQUE_ALPHA(col.a);
                 return col;

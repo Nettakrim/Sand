@@ -61,7 +61,7 @@ uint4 updateTile(uint4 data) {
         if (data.a < 28) data.a += 4;
         else {
             data.a -= 28;
-            data.g = (data.g & ~28) | (data.a & 28);
+            data.g = (data.g & ~28) | (data.r & 28);
         }
     }
 
@@ -274,11 +274,25 @@ void CSInit (uint3 id : SV_DispatchThreadID)
     if (y == 0 && x > 10 && id.x%5 == 0) {
         component = 8;
         componentData = 3;
-        ground = (((uint(x)*123)%16)+16)*8;
+        ground = 1;
     }
 
     if (y == 0 && x < -10 && id.x%5 == 0) {
         component = 3;
+        componentData = 0;
+    }
+
+    if (x == 0 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
+        component = 9;
+        componentData = 0;
+        ground = ((uint(x^y)*67)%8)<<2;
+    }
+    if (x == 1 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
+        component = 3;
+        componentData = 0;
+    }
+    if (x == 1 && y > 10 && id.y%5 == 0) {
+        component = 1;
         componentData = 0;
     }
 
