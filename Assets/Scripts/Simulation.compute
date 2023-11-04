@@ -154,8 +154,21 @@ uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
         data.g = 0;
     }
 
-    if (data.b == 12 || data.b == 13 || data.b == 14) {
-        //todo: filters need to not act like bins *always*
+    //weight filter
+    if (data.b == 12) {
+        if ((data.a >> 2) != (data.g & 3)) {
+            data.g = 0;
+        }
+    }
+    //color filter
+    if (data.b == 13) {
+        if ((data.a >> 2) != ((data.g >> 2) & 7)) {
+            data.g = 0;
+        }
+    }
+    //smart filter
+    if (data.b == 14) {
+        //todo: make it work
         data.g = 0;
     }
 
@@ -291,7 +304,7 @@ void CSInit (uint3 id : SV_DispatchThreadID)
 //        ground = 1;
 //    }
 //
-//    if (y == 0 && x < -10 && id.x%5 == 0) {
+//    if (y == 0 && x < -10 && id.x%5 == 2) {
 //        component = 3;
 //        componentData = 0;
 //    }
@@ -323,11 +336,28 @@ void CSInit (uint3 id : SV_DispatchThreadID)
 //        componentData = 0;
 //    }
 
-    if (x == 0 && y == 0) {
-        sand = 255;
+//    if (x == 0 && y == 0) {
+//        sand = 255;
+//    }
+//    component = 3;
+//    componentData = 0;
+
+    if (y == 0) {
+        component = 8;
+        componentData = 3;
+        ground = 31;
+    } else if (y == -10 && x >= 0) {
+        if (x < 4) {
+            component = 12;
+            componentData = x*4;
+        } else {
+            component = 13;
+            componentData = (x-4)*4;
+        }
+    } else {
+        component = 2;
+        componentData = 3;
     }
-    component = 3;
-    componentData = 0;
 
     Result[id.xy] = encode(uint4(ground, sand, component, componentData));
 }
