@@ -1,0 +1,143 @@
+#pragma kernel CSInit
+#pragma kernel CSMain
+
+RWTexture2D<float4> Result;
+RWTexture2D<float4> Input;
+int2 Size;
+int2 PosOffset;
+
+//not sure why:
+//https://discussions.unity.com/t/how-do-int-textures-work-in-computeshaders/246832/2
+//doesnt work, but casting is fine
+
+float4 encode(uint4 value) {
+    return float4(float(value.r)/255.0, float(value.g)/255.0, float(value.b)/255.0, float(value.a)/255.0);
+}
+
+uint4 decode(float4 value) {
+    return uint4(uint(value.r*255.0), uint(value.g*255.0), uint(value.b*255.0), uint(value.a*255.0));
+}
+
+uint4 getPixel(uint2 pos) {
+    if (pos.x < asuint(Size.x) && pos.y < asuint(Size.x)) {
+        return decode(Input[pos]);
+    }
+    return uint4(0,0,1,0);
+}
+
+void setPixel(uint2 pos, uint4 data) {
+    if (pos.x < asuint(Size.x) && pos.y < asuint(Size.y)) {
+        Result[pos] = encode(data);
+    }
+}
+
+void copyPixel(uint2 pos) {
+    if (pos.x < asuint(Size.x) && pos.y < asuint(Size.y)) {
+        Result[pos] = Input[pos];
+    }
+}
+
+bool tileFree(uint4 data) {
+    //0001 wall
+    //1000 miner
+    //non ---00 sand
+    //11-- filters
+    //return false;
+    return data.g == 0 && data.b != 1 && data.b != 16;
+}
+
+uint4 updateTile(uint4 data) {
+    //this is where miners might create sand
+    return data;
+}
+
+int getTileMovement(uint4 data) {
+    //-1 none
+    //0  00 right
+    //1  01 left
+    //2  10 up
+    //3  11 down
+    return 3;
+}
+
+uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
+    data.g = sand;
+    return data;
+}
+
+[numthreads(8,8,1)]
+void CSInit (uint3 id : SV_DispatchThreadID)
+{
+    if (id.y%16 == 0) {
+        Result[id.xy] = encode(uint4(0,((id.x%16)+48)*4,0,0));
+    } else {
+        Result[id.xy] = encode(uint4(0,0,0,0));
+    }
+}
+
+[numthreads(1,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    uint2 pos = uint2(id.x*3 + PosOffset.x - 1, id.y*3 + PosOffset.y - 1);
+
+    uint2 rightPos = pos+uint2(1, 0);
+    uint2 leftPos  = pos-uint2(1, 0);
+    uint2 upPos    = pos+uint2(0, 1);
+    uint2 downPos  = pos-uint2(0, 1);
+
+    uint4 current = getPixel(pos);
+
+    uint4 right = getPixel(rightPos);
+    uint4 left  = getPixel(leftPos);
+    uint4 up    = getPixel(upPos);
+    uint4 down  = getPixel(downPos);
+
+
+
+    current = updateTile(current);
+
+    if (current.g > 0) {
+        int direction = getTileMovement(current);
+
+        if (direction >= 0) {
+            uint4 tileInDirection;
+
+            if (direction == 0)      tileInDirection = right;
+            else if (direction == 1) tileInDirection = left;
+            else if (direction == 2) tileInDirection = up;
+            else if (direction == 3) tileInDirection = down;
+            else tileInDirection = uint4(0,0,1,0);
+
+            if (tileFree(tileInDirection)) {
+                tileInDirection = sandEnteredTile(current.g, direction, tileInDirection);
+                current.g = 0;
+                //current.b = 255;
+            }
+
+            if (direction == 0)      right = tileInDirection;
+            else if (direction == 1) left  = tileInDirection;
+            else if (direction == 2) up    = tileInDirection;
+            else if (direction == 3) down  = tileInDirection;
+        }
+    }
+
+    //if (current.b > 0) {
+    //    current.b = current.b - 1;
+    //}
+
+    //current.r = tileFree(getPixel(leftPos)) ? 0 : 255;
+    current.r = 0;
+
+    copyPixel(uint2(pos.x+uint(1), pos.y+uint(1)));
+    copyPixel(uint2(pos.x+uint(1), pos.y-uint(1)));
+    copyPixel(uint2(pos.x-uint(1), pos.y+uint(1)));
+    copyPixel(uint2(pos.x-uint(1), pos.y-uint(1)));
+
+    setPixel(rightPos, right);
+    setPixel(leftPos, left);
+    setPixel(upPos, up);
+    setPixel(downPos, down);
+
+
+    setPixel(pos, current);
+}
