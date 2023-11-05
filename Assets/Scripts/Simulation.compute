@@ -2,6 +2,8 @@
 #pragma kernel CS3x3Start
 #pragma kernel CSStep
 
+int Random;
+
 RWTexture2D<float4> Result;
 RWTexture2D<float4> Input;
 int2 Size;
@@ -16,6 +18,14 @@ RWStructuredBuffer<int> ShippingBuffer;
 
 float4 encode(uint4 value) {
     return float4(float(value.r)/255.0, float(value.g)/255.0, float(value.b)/255.0, float(value.a)/255.0);
+}
+
+//https://www.shadertoy.com/view/MdcfDj
+uint hash( uint2 q )
+{
+    q *= uint2(1597334677, 3812015801); 
+    uint n = (q.x ^ q.y) * 1597334677;
+    return asuint(float(n) * (1.0/float(0xffffffff)));
 }
 
 uint4 decode(float4 value) {
@@ -54,13 +64,13 @@ bool tileFree(uint4 data, int direction) {
     return !(data.g > 0 || data.b == 1 || data.b == 8);
 }
 
-uint4 updateTile(uint4 data) {
+uint4 updateTile(uint4 data, uint2 pos) {
     //miner: increment 3rd-5th bits, if at max count and theres no sand on the miner, create sand and reset count
     if (data.b == 8) {
         if (data.a < 28) data.a += 4;
         else if (data.g == 0) {
             data.a -= 28;
-            data.g = data.r;
+            data.g = (data.r&31) | ((hash(pos^uint2(asuint(Random), asuint(Random)))&7) << 5);
         }
     }
 
@@ -210,7 +220,7 @@ void CSStep (uint3 id : SV_DispatchThreadID)
 
     //crossroads are calculated seperately
     if (current.b < 4 || current.b > 7) {
-        current = updateTile(current);
+        current = updateTile(current, pos);
 
         if (current.g > 0) {
             int direction = getTileMovement(current);
@@ -329,9 +339,9 @@ void CSInit (uint3 id : SV_DispatchThreadID)
     if (y == 0 && x > 10 && id.x%5 == 0) {
         component = 8;
         componentData = 3;
-        ground = 1;
+        ground = 1 + (((id.x/5)%8) << 2);
     }
-    
+
 //
 //    if (y == 0 && x < -10 && id.x%5 == 2) {
 //        component = 3;

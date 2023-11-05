@@ -28,14 +28,21 @@ public class Game : MonoBehaviour
     private ComputeBuffer shippingBuffer;
 
     void Start() {
-        CreateRenderTexture(ref texA, 256, 256);
-        CreateRenderTexture(ref texB, 256, 256);
+        int width = 256;
+        int height = 256;
+
+        CreateRenderTexture(ref texA, width, height);
+        CreateRenderTexture(ref texB, width, height);
+
         material.SetTexture("_TexA", texA);
         material.SetTexture("_TexB", texB);
+        material.SetVector("_TexelSize", new Vector4(1f/width, 1f/height, width, height));
+
         kernalInit = computeShader.FindKernel("CSInit");
         kernal3x3Start = computeShader.FindKernel("CS3x3Start");
         kernalStep = computeShader.FindKernel("CSStep");
-        size = new int[]{texA.width, texA.height};
+
+        size = new int[]{width, height};
 
         offsets = new TetrisBag<int[]>(new int[][]{
             new int[]{0,0}, new int[]{1,0}, new int[]{2,0},
@@ -121,6 +128,7 @@ public class Game : MonoBehaviour
         computeShader.SetInts("Size", size);
         computeShader.SetBuffer(kernalStep, "GateBuffer", gateBuffer);
         computeShader.SetBuffer(kernalStep, "ShippingBuffer", shippingBuffer);
+        computeShader.SetInt("Random", Random.Range(int.MinValue, int.MaxValue));
 
         computeShader.Dispatch(kernalStep, Mathf.CeilToInt(i.width / 3f)+1, Mathf.CeilToInt(i.height / 3f)+1, 1);
     }

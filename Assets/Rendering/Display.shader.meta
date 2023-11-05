@@ -5,6 +5,7 @@ ShaderImporter:
   defaultTextures:
   - _TexA: {instanceID: 0}
   - _TexB: {instanceID: 0}
+  - _SandColors: {instanceID: 0}
   nonModifiableTextures: []
   userData: 
   assetBundleName: 

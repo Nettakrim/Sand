@@ -39,6 +39,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _SandColors:
+        m_Texture: {fileID: 2800000, guid: 17a72414456a65448beb856e2bf7b248, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _TexA:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -56,4 +60,6 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _Flip: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+    - _TexSize: {r: 0.00390625, g: 0.00390625, b: 256, a: 256}
+    - _TexelSize: {r: 0.00390625, g: 0.00390625, b: 256, a: 256}
   m_BuildTextureStacks: []
