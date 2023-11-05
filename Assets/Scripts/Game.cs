@@ -7,8 +7,9 @@ public class Game : MonoBehaviour
 {
     [SerializeField] private ComputeShader computeShader;
 
-    private int kernalMain;
     private int kernalInit;
+    private int kernal3x3Start;
+    private int kernalStep;
 
     private RenderTexture texA;
     private RenderTexture texB;
@@ -21,13 +22,16 @@ public class Game : MonoBehaviour
 
     private TetrisBag<int[]> offsets;
 
+    private ComputeBuffer gateBuffer;
+
     void Start() {
         CreateRenderTexture(ref texA, 256, 256);
         CreateRenderTexture(ref texB, 256, 256);
         material.SetTexture("_TexA", texA);
         material.SetTexture("_TexB", texB);
-        kernalMain = computeShader.FindKernel("CSMain");
         kernalInit = computeShader.FindKernel("CSInit");
+        kernal3x3Start = computeShader.FindKernel("CS3x3Start");
+        kernalStep = computeShader.FindKernel("CSStep");
         size = new int[]{texA.width, texA.height};
 
         offsets = new TetrisBag<int[]>(new int[][]{
@@ -41,6 +45,12 @@ public class Game : MonoBehaviour
 
     void Reset() {
         step = false;
+
+        if (gateBuffer != null) gateBuffer.Release();
+        gateBuffer = new ComputeBuffer(4, sizeof(int));
+
+        computeShader.SetBuffer(kernal3x3Start, "GateBuffer", gateBuffer);
+        computeShader.Dispatch(kernal3x3Start, 1, 1, 1);
 
         computeShader.SetTexture(kernalInit, "Input", texA);
         computeShader.SetTexture(kernalInit, "Result", texB);
@@ -63,18 +73,24 @@ public class Game : MonoBehaviour
     }
 
     void Simulate(RenderTexture i, RenderTexture o) {
+        if (offsets.remaining == 0) {
+            computeShader.SetBuffer(kernal3x3Start, "GateBuffer", gateBuffer);
+            computeShader.Dispatch(kernal3x3Start, 1, 1, 1);
+        }
+
         SimulationStep(i, o, offsets.Get());
 
         material.SetFloat("_Step", step ? 1 : 0);
     }
 
     void SimulationStep(RenderTexture i, RenderTexture o, int[] offset) {
-        computeShader.SetTexture(kernalMain, "Input", i);
-        computeShader.SetTexture(kernalMain, "Result", o);
+        computeShader.SetTexture(kernalStep, "Input", i);
+        computeShader.SetTexture(kernalStep, "Result", o);
         computeShader.SetInts("PosOffset", offset);
         computeShader.SetInts("Size", size);
+        computeShader.SetBuffer(kernalStep, "GateBuffer", gateBuffer);
 
-        computeShader.Dispatch(kernalMain, Mathf.CeilToInt(i.width / 3f)+1, Mathf.CeilToInt(i.height / 3f)+1, 1);
+        computeShader.Dispatch(kernalStep, Mathf.CeilToInt(i.width / 3f)+1, Mathf.CeilToInt(i.height / 3f)+1, 1);
     }
 
     // https://forum.unity.com/threads/attempting-to-bind-texture-id-as-uav-the-texture-wasnt-created-with-the-uav-usage-flag-set.820512/

@@ -1,13 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 [System.Serializable]
 public class TetrisBag<T>
 {
     [SerializeField] private T[] items;
     private bool[] ready;
-    private int remaining;
+    [System.NonSerialized] public int remaining;
     [SerializeField] private bool disallowRepeats;
     private int last;
 

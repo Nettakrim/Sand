@@ -1,10 +1,13 @@
 #pragma kernel CSInit
-#pragma kernel CSMain
+#pragma kernel CS3x3Start
+#pragma kernel CSStep
 
 RWTexture2D<float4> Result;
 RWTexture2D<float4> Input;
 int2 Size;
 int2 PosOffset;
+
+RWStructuredBuffer<int> GateBuffer;
 
 //not sure why:
 //https://discussions.unity.com/t/how-do-int-textures-work-in-computeshaders/246832/2
@@ -65,9 +68,9 @@ uint4 updateTile(uint4 data) {
         }
     }
 
-    //gate: set a length 64 bool buffer to do implicit or?
-    if (data.b == 15) {
-        //todo: make it work
+    //gate: if any of the gate type has no sand, that bit is set true
+    if (data.b == 15 && data.g == 0) {
+        InterlockedOr(GateBuffer[data.a >> 7], 1 << ((data.a&127) >> 2));
     }
 
     if (data.b == 3 && data.g > 0) {
@@ -118,10 +121,14 @@ int getTileMovement(uint4 data) {
         return data.a < 4 ? (data.a & 3) : -1;
     }
 
-    //gate: only let through when all of gate id is ready
+    //gate: only let through when all of gate id is ready, then if successful dissallow the next tick of gate passage
     if (data.b == 15) {
-        //todo: make it work
-        return data.a&3;
+        int i = data.a >> 7;
+        int s = 1 << ((data.a&127) >> 2);
+        if ((GateBuffer[i|2] & s) == 0) {
+            InterlockedOr(GateBuffer[i], s);
+            return data.a&3;
+        }
     }
 
     return -1;
@@ -176,7 +183,7 @@ uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
 }
 
 [numthreads(1,1,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void CSStep (uint3 id : SV_DispatchThreadID)
 {
     uint2 pos = uint2(id.x*3 + PosOffset.x - 1, id.y*3 + PosOffset.y - 1);
 
@@ -273,6 +280,15 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     setPixel(pos, current);
 }
 
+[numthreads(1,1,1)]
+void CS3x3Start (uint3 id : SV_DispatchThreadID)
+{
+    GateBuffer[2] = GateBuffer[0];
+    GateBuffer[3] = GateBuffer[1];
+    GateBuffer[0] = 0;
+    GateBuffer[1] = 0;
+}
+
 [numthreads(8,8,1)]
 void CSInit (uint3 id : SV_DispatchThreadID)
 {
@@ -284,25 +300,25 @@ void CSInit (uint3 id : SV_DispatchThreadID)
     int x = int(id.x)-128;
     int y = int(id.y)-128;
 
-//    if (x >= 0) {
-//        if (y >= 0) {
-//            componentData = (x >= y) ? 3 : 0;
-//        } else {
-//            componentData = (x >= -y) ? 3 : 1;
-//        }
-//    } else {
-//        if (y >= 0) {
-//            componentData += (-x > y+1) ? 2 : 0;
-//        } else {
-//            componentData += (-x > -y) ? 1 : 2;
-//        }
-//    }
-//
-//    if (y == 0 && x > 10 && id.x%5 == 0) {
-//        component = 8;
-//        componentData = 3;
-//        ground = 1;
-//    }
+    if (x >= 0) {
+        if (y >= 0) {
+            componentData = (x >= y) ? 3 : 0;
+        } else {
+            componentData = (x >= -y) ? 3 : 1;
+        }
+    } else {
+        if (y >= 0) {
+            componentData += (-x > y+1) ? 2 : 0;
+        } else {
+            componentData += (-x > -y) ? 1 : 2;
+        }
+    }
+
+    if (y == 0 && x > 10 && id.x%5 == 0) {
+        component = 8;
+        componentData = 3;
+        ground = 1;
+    }
 //
 //    if (y == 0 && x < -10 && id.x%5 == 2) {
 //        component = 3;
@@ -342,21 +358,45 @@ void CSInit (uint3 id : SV_DispatchThreadID)
 //    component = 3;
 //    componentData = 0;
 
-    if (y == 0) {
-        component = 8;
-        componentData = 3;
-        ground = 31;
-    } else if (y == -10 && x >= 0) {
-        if (x < 4) {
-            component = 12;
-            componentData = x*4;
+//    if (y == 0) {
+//        component = 8;
+//        componentData = 3;
+//        ground = 31;
+//    } else if (y == -10 && x >= 0) {
+//        if (x < 4) {
+//            component = 12;
+//            componentData = x*4;
+//        } else {
+//            component = 13;
+//            componentData = (x-4)*4;
+//        }
+//    } else {
+//        component = 2;
+//        componentData = 3;
+//    }
+
+    if (y == -1 && x > 10 && id.x%5 == 0) {
+        component = 3;
+        componentData = 0;
+    }
+
+    if (y == -1 && x > 10 && id.x%5 == 1) {
+        if (id.x%50 == 1) {
+            component = 10;
         } else {
-            component = 13;
-            componentData = (x-4)*4;
+            component = 1;
         }
-    } else {
-        component = 2;
-        componentData = 3;
+        componentData = 0;
+    }
+
+    if (y == 0 && x < -10 && id.x%5 == 1) {
+        component = 15;
+        componentData = (id.x/25) << 2;
+    }
+
+    if (y == 1 && x > 10) {
+        component = 10;
+        componentData = 0;
     }
 
     Result[id.xy] = encode(uint4(ground, sand, component, componentData));
