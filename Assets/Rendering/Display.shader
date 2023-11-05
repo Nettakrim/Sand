@@ -61,7 +61,23 @@ SubShader {
             }
 
             float3 renderConveyor(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+                float2 pos = pixelPos;
+                if ((data.a&2) == 0) {
+                    pos = pos.yx;
+                }
+                if ((data.a&1) == 0) {
+                    pos = float2(pos.x, -pos.y);
+                }
+                pos.y = frac(pos.y+_Time.y*5)-0.5;
+                bool state = abs(pos.x)>pos.y && (pos.y > 0 || (abs(pos.x)+abs(pos.y) < 0.5));
+
+                float3 color = state ? float3(0.25,0.25,0.3) : float3(0.2, 0.2, 0.25);
+
+                if (data.g > 0) {
+                    color = sandColor;
+                }
+
+                return color;
             }
 
             float3 renderSplitter(uint4 data, float3 sandColor, float2 pixelPos) {
@@ -73,7 +89,16 @@ SubShader {
             }
 
             float3 renderMiner(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+                uint timer = data.a >> 2;
+
+                float3 color = float3(0.1, 0.1, 0.1);
+                color *= timer;
+
+                if ((data.g > 0) && max(abs(pixelPos.x),abs(pixelPos.y)) < 0.3) {
+                    color = sandColor;
+                }
+
+                return color;
             }
 
             float3 renderPainter(uint4 data, float3 sandColor, float2 pixelPos) {

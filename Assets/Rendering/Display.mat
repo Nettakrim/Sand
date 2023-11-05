@@ -56,10 +56,12 @@ Material:
     - PixelSnap: 0
     - _EnableExternalAlpha: 0
     - _Step: 0
+    - _Time: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _Flip: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
     - _TexSize: {r: 0.00390625, g: 0.00390625, b: 256, a: 256}
     - _TexelSize: {r: 0.00390625, g: 0.00390625, b: 256, a: 256}
+    - _Time: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
