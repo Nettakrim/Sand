@@ -41,13 +41,17 @@ void copyPixel(uint2 pos) {
     }
 }
 
-bool tileFree(uint4 data) {
+bool tileFree(uint4 data, int direction) {
+    //4-7 crossroads, which are blocked based on direction
+
+    if (data.b >= 4 && data.b <= 7) {
+        return (direction > 1 ? (data.a == 0) : (data.g == 0));
+    }
+
+    //non-0 sand
     //0001 wall
     //1000 miner
-    //non-0 sand
-    //4-7 crossroads with non-0 component data
-
-    return !(data.g > 0 || data.b == 1 || data.b == 8 || (data.b >= 4 && data.b <= 7 && data.a > 0));
+    return !(data.g > 0 || data.b == 1 || data.b == 8);
 }
 
 uint4 updateTile(uint4 data) {
@@ -220,7 +224,7 @@ void CSStep (uint3 id : SV_DispatchThreadID)
                 else if (direction == 3) tileInDirection = down;
                 else tileInDirection = uint4(0,0,1,0);
 
-                if (tileFree(tileInDirection)) {
+                if (tileFree(tileInDirection, direction)) {
                     tileInDirection = sandEnteredTile(current.g, direction, tileInDirection);
                     current.g = 0;
                 }
@@ -244,7 +248,7 @@ void CSStep (uint3 id : SV_DispatchThreadID)
             //x axis
             bool positive = (directions&1) == 0;
             uint4 tileInDirection = positive ? right : left;
-            if (tileFree(tileInDirection) || (tileInDirection.b >= 4 && tileInDirection.b <= 7 && tileInDirection.g == 0)) {
+            if (tileFree(tileInDirection, positive ? 0 : 1)) {
                 tileInDirection = sandEnteredTile(current.g, positive ? 0 : 1, tileInDirection);
                 current.g = 0;
             }
@@ -259,7 +263,7 @@ void CSStep (uint3 id : SV_DispatchThreadID)
             //y axis
             bool positive = directions < 2;
             uint4 tileInDirection = positive ? up : down;
-            if (tileFree(tileInDirection) || (tileInDirection.b >= 4 && tileInDirection.b <= 7 && tileInDirection.a == 0)) {
+            if (tileFree(tileInDirection, positive ? 2 : 3)) {
                 tileInDirection = sandEnteredTile(current.a, positive ? 2 : 3, tileInDirection);
                 current.a = 0;
             }
@@ -308,25 +312,26 @@ void CSInit (uint3 id : SV_DispatchThreadID)
     int x = int(id.x)-128;
     int y = int(id.y)-128;
 
-    //if (x >= 0) {
-    //    if (y >= 0) {
-    //        componentData = (x >= y) ? 3 : 0;
-    //    } else {
-    //        componentData = (x >= -y) ? 3 : 1;
-    //    }
-    //} else {
-    //    if (y >= 0) {
-    //        componentData += (-x > y+1) ? 2 : 0;
-    //    } else {
-    //        componentData += (-x > -y) ? 1 : 2;
-    //    }
-    //}
+    if (x >= 0) {
+        if (y >= 0) {
+            componentData = (x >= y) ? 3 : 0;
+        } else {
+            componentData = (x >= -y) ? 3 : 1;
+        }
+    } else {
+        if (y >= 0) {
+            componentData += (-x > y+1) ? 2 : 0;
+        } else {
+            componentData += (-x > -y) ? 1 : 2;
+        }
+    }
 
-    //if (y == 0 && x > 10 && id.x%5 == 0) {
-    //    component = 8;
-    //    componentData = 3;
-    //    ground = 1;
-    //}
+    if (y == 0 && x > 10 && id.x%5 == 0) {
+        component = 8;
+        componentData = 3;
+        ground = 1;
+    }
+    
 //
 //    if (y == 0 && x < -10 && id.x%5 == 2) {
 //        component = 3;
@@ -359,6 +364,10 @@ void CSInit (uint3 id : SV_DispatchThreadID)
 //        component = 4;
 //        componentData = 0;
 //    }
+//
+//    if (x > 100 || y > 100) {
+//        component = 3;
+//    }
 
 //    if (x == 0 && y == 0) {
 //        sand = 255;
@@ -383,10 +392,10 @@ void CSInit (uint3 id : SV_DispatchThreadID)
 //        componentData = 3;
 //    }
 
-    if (y == 0 && x < -10 && id.x%5 == 0) {
-        component = 11;
-        componentData = 0;
-    }
+//    if (y == 0 && x < -10 && id.x%5 == 0) {
+//        component = 11;
+//        componentData = 0;
+//    }
 
     Result[id.xy] = encode(uint4(ground, sand, component, componentData));
 }

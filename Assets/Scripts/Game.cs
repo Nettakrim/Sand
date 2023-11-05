@@ -106,11 +106,11 @@ public class Game : MonoBehaviour
     void OnCompleteShippingReadBack(AsyncGPUReadbackRequest request) {
         if (shippingBuffer != null) {
             request.GetData<int>().CopyTo(shipping);
-            string s = "";
-            for (int i = 0; i < 24; i++) {
-                s += shipping[i]+(i < 23 ? " " : "");
-            }
-            Debug.Log(s);
+            //string s = "";
+            //for (int i = 0; i < 24; i++) {
+            //    s += shipping[i]+(i < 23 ? " " : "");
+            //}
+            //Debug.Log(s);
         }
     }
 
