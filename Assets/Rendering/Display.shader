@@ -1,7 +1,7 @@
 Shader "Custom/Display" {
 Properties {
     _TexA ("TexA", 2D) = "black" {}
-    _TexB ("TexB", 2D) = "white" {}
+    _TexB ("TexB", 2D) = "black" {}
     _Step ("Step", float) = 0
 }
 
@@ -49,14 +49,11 @@ SubShader {
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 col = lerp(tex2D(_TexA, i.texcoord), tex2D(_TexB, i.texcoord), _Step);
-                col.b *= 25;
-                if (col.b*255 > 4) {
-                    col.r = col.a * 25;
-                }
-                col.g *= 32;
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                UNITY_OPAQUE_ALPHA(col.a);
+                uint4 data = uint4(lerp(tex2D(_TexA, i.texcoord), tex2D(_TexB, i.texcoord), _Step)*255.0);
+                float4 col = float4(0,0,0,0);
+
+                col = data;
+
                 return col;
             }
         ENDCG

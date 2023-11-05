@@ -127,7 +127,7 @@ public class Game : MonoBehaviour
 
     // https://forum.unity.com/threads/attempting-to-bind-texture-id-as-uav-the-texture-wasnt-created-with-the-uav-usage-flag-set.820512/
     void CreateRenderTexture(ref RenderTexture rt, int width, int height) {
-        rt = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        rt = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
         rt.enableRandomWrite = true;
         rt.filterMode = FilterMode.Point;
         rt.Create();
