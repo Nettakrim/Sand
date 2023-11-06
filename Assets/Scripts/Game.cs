@@ -99,7 +99,7 @@ public class Game : MonoBehaviour
 
         SimulationStep(i, o, offsets.Get());
 
-        material.SetFloat("_Step", step ? 1 : 0);
+        material.SetFloat("_Step", step ? 0 : 1);
     }
 
     void Start3x3() {

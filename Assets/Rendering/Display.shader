@@ -108,11 +108,20 @@ SubShader {
                 bool isRight = ((data.a >> 2)^(data.a >> 3)) == 0;
                 color = isRight ? float3(0.3, 0.3, 0.3) : float3(0.5, 0.5, 0.5);
 
-                float2 pos = rotatePosition(pixelPos, (data.a&3) ^ (2 | ((data.a >> 1) ^ (data.a >> 2))));
+                float2 enterPos = rotatePosition(pixelPos, data.a);
+                float2 exitPos = rotatePosition(pixelPos, (data.a&3) ^ (2 | ((data.a >> 1) ^ (data.a >> 2))));
 
-                if (data.g > 0 && pos.y > 0) {
+                //if (data.g > 0 && enterPos.y > 0) {
+                //    color = float3(0,0,0);
+                //}
+
+                if (data.g > 0 && enterPos.y > 0) {
                     color = float3(1,1,1);
                 }
+
+                //if (enterPos.y > -exitPos.y) {
+                //    color = float3(1,1,1);
+                //}
 
                 if (data.g > 0 && max(abs(pixelPos.x),abs(pixelPos.y)) < 0.3) {
                     color = baseColor;

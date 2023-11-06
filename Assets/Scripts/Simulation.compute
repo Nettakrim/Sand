@@ -132,7 +132,7 @@ int getTileMovement(uint4 data) {
 
         // 1s place is "odd total of bits", 2s place is "not refrence 2"
 
-        return (data.a&3) ^ (2 | ((data.a >> 1) ^ (data.a >> 2)));
+        return (data.a ^ (2 | ((data.a >> 1) ^ (data.a >> 2))))&3;
     }
 
     //painter only allows sand through if its timer is 0
@@ -169,13 +169,13 @@ uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
 
     data.g = sand;
 
-    //splitter: set first 2 bits to movement direction
-    //this is also the case for all filters and the gate
-    //and for painters
-    if (data.b == 3 || data.b >= 12 || data.b == 9) data.a = (data.a & ~3) | direction;
+    //filters, gate, painter: set first 2 bits to movement direction
+    if (data.b >= 12 || data.b == 9) data.a = (data.a & ~3) | direction;
 
     //splitter: set 4th bit true, this tells the display shader that sand has entered the tile without yet flipping the direction bit
-    if (data.b == 3) data.a |= 8;
+    //also set first 2 bits
+    //only the state bit (3rd) is kept the same
+    if (data.b == 3) data.a = (data.a & 4) | direction | 8;
 
     //bin: instantly destroy sand, this is done when sand enters the tile, that way sand from different direction can enter the same bin without needing the bin to be ticked
     if (data.b == 10) {
@@ -301,7 +301,6 @@ void CSStep (uint3 id : SV_DispatchThreadID)
     setPixel(leftPos, left);
     setPixel(upPos, up);
     setPixel(downPos, down);
-
 
     setPixel(pos, current);
 }
