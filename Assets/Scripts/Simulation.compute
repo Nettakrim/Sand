@@ -68,8 +68,9 @@ uint4 updateTile(uint4 data, uint2 pos) {
     //miner: increment 3rd-5th bits, if at max count and theres no sand on the miner, create sand and reset count
     if (data.b == 8) {
         if (data.a < 28) data.a += 4;
-        else if (data.g == 0) {
-            data.a -= 28;
+        else if (data.g == 0) data.a -= 28;
+
+        if (data.g == 0 && data.a >= 24) {
             data.g = (data.r&31) | ((hash(pos^uint2(asuint(Random), asuint(Random)))&7) << 5);
         }
     }
@@ -104,9 +105,11 @@ int getTileMovement(uint4 data) {
     //3  11 down
 
     //conveyor: movement direction directly corresponds to component data
-    //miner: also the same, however it has bits 000-- that need to get masked
-    //this is also the case for painter and all filters, since they keep sand moving in the same direction
-    if (data.b == 2 || data.b == 8 || data.b == 12 || data.b == 13 || data.b == 14) return data.a&3;
+    //this is also the case for painter and all filters, since they keep sand moving in the same direction, but they need ---XX to be masked
+    if (data.b == 2 || data.b == 12 || data.b == 13 || data.b == 14) return data.a&3;
+
+    //miner: movement is stored the same way, but it should only happen when count is at max
+    if (data.b == 8 && data.a > 28) return data.a&3;
 
     //splitter: movment is based on direction entered
     if (data.b == 3) {

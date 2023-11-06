@@ -117,7 +117,7 @@ SubShader {
 
                 float angle = ((atan2(pos.x*2, pos.y*2)/3.14159265)+0.75)/1.5;
 
-                float3 color = (angle + float(timer)/7.0) > 1 ? float3(1, 1, 1) : float3(0.1, 0.1, 0.1);
+                float3 color = (angle + float(timer)/6.0) > 1 ? float3(1, 1, 1) : float3(0.1, 0.1, 0.1);
 
                 if (max(abs(pos.x),abs(pos.y)) < 0.3 || angle < 0 || angle > 1) {
                     color = baseColor;
