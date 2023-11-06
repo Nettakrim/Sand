@@ -153,7 +153,24 @@ SubShader {
             }
 
             float3 renderPainter(uint4 data, float3 baseColor, float2 pixelPos) {
-                return baseColor;
+                uint timer = data.a >> 2;
+
+                float3 color;
+                float3 brightGround = getBaseColor(0, (data.r & 31) | (data.g == 0 ? data.r : (data.g & 224)));
+
+                bool inner = max(abs(pixelPos.x),abs(pixelPos.y)) < 0.3;
+
+                if (data.g > 0) {
+                    if (inner) {
+                        color = lerp(baseColor, brightGround, float(timer)/7);
+                    } else {
+                        color = brightGround;
+                    }
+                } else {
+                    color = inner ? baseColor : brightGround;
+                }
+
+                return color;
             }
 
             float3 renderBin(uint4 data, float3 baseColor, float2 pixelPos) {
