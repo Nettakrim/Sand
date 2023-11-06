@@ -89,9 +89,10 @@ uint4 updateTile(uint4 data, uint2 pos) {
         InterlockedOr(GateBuffer[data.a >> 7], 1 << ((data.a&127) >> 2));
     }
 
+    //splitter: flip 3rd bit while sand is on it, this swaps the target direction
+    //also clear 4th bit, since now the direction has been flipped
     if (data.b == 3 && data.g > 0) {
-        //flip 3rd bit while sand is on it, this swaps the target direction
-        data.a ^= 4;
+        data.a = (data.a^4)&7;
     }
 
     return data;
@@ -172,6 +173,9 @@ uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
     //this is also the case for all filters and the gate
     //and for painters
     if (data.b == 3 || data.b >= 12 || data.b == 9) data.a = (data.a & ~3) | direction;
+
+    //splitter: set 4th bit true, this tells the display shader that sand has entered the tile without yet flipping the direction bit
+    if (data.b == 3) data.a |= 8;
 
     //bin: instantly destroy sand, this is done when sand enters the tile, that way sand from different direction can enter the same bin without needing the bin to be ticked
     if (data.b == 10) {

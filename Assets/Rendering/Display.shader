@@ -103,7 +103,22 @@ SubShader {
             }
 
             float3 renderSplitter(uint4 data, float3 baseColor, float2 pixelPos) {
-                return baseColor;
+                float3 color;
+
+                bool isRight = ((data.a >> 2)^(data.a >> 3)) == 0;
+                color = isRight ? float3(0.3, 0.3, 0.3) : float3(0.5, 0.5, 0.5);
+
+                float2 pos = rotatePosition(pixelPos, (data.a&3) ^ (2 | ((data.a >> 1) ^ (data.a >> 2))));
+
+                if (data.g > 0 && pos.y > 0) {
+                    color = float3(1,1,1);
+                }
+
+                if (data.g > 0 && max(abs(pixelPos.x),abs(pixelPos.y)) < 0.3) {
+                    color = baseColor;
+                }
+
+                return color;
             }
 
             float3 renderCrossroad(uint4 data, float3 baseColor, float2 pixelPos) {
