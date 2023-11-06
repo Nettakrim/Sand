@@ -4,6 +4,7 @@ Properties {
     _TexB ("TexB", 2D) = "black" {}
     _Step ("Step", float) = 0
     _SandColors ("SandColors", 2D) = "white" {}
+    _GroundColors ("GroundColors", 2D) = "white" {}
     _TexelSize("TexelSize", Vector) = (1, 1, 1, 1)
 }
 
@@ -38,6 +39,7 @@ SubShader {
             float4 _TexA_ST;
             float _Step;
             sampler2D _SandColors;
+            sampler2D _GroundColors;
             float4 _TexelSize;
 
             v2f vert (appdata_t v)
@@ -52,87 +54,104 @@ SubShader {
             }
 
 
-            float3 renderEmpty(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+
+            float2 rotatePosition(float2 pixelPos, uint data) {
+                if ((data&2) == 0) {
+                    pixelPos = pixelPos.yx;
+                }
+                if ((data&1) == 0) {
+                    pixelPos = float2(pixelPos.x, -pixelPos.y);
+                }
+                return pixelPos;
             }
 
-            float3 renderWall(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+            float2 getColorPosition(uint value) {
+                return float2(float((value >> 5) + ((value & 31) > 15 ? 8 : 0))/16.0, float(value & 15)/16.0);
             }
 
-            float3 renderConveyor(uint4 data, float3 sandColor, float2 pixelPos) {
-                float2 pos = pixelPos;
-                if ((data.a&2) == 0) {
-                    pos = pos.yx;
-                }
-                if ((data.a&1) == 0) {
-                    pos = float2(pos.x, -pos.y);
-                }
+            float3 getBaseColor(uint ground, uint sand) {
+                return sand == 0 ? tex2D(_GroundColors, getColorPosition(ground)).rgb : tex2D(_SandColors, getColorPosition(sand)).rgb;
+            }
+
+
+
+
+
+
+
+            float3 renderEmpty(uint4 data, float3 baseColor, float2 pixelPos) {
+                return baseColor;
+            }
+
+            float3 renderWall(uint4 data, float3 baseColor, float2 pixelPos) {
+                return float3(0.1, 0.1, 0.1);
+            }
+
+            float3 renderConveyor(uint4 data, float3 baseColor, float2 pixelPos) {
+                float2 pos = rotatePosition(pixelPos, data.a);
+
                 pos.y = frac(pos.y+_Time.y*5)-0.5;
                 bool state = abs(pos.x)>pos.y && (pos.y > 0 || (abs(pos.x)+abs(pos.y) < 0.5));
 
                 float3 color = state ? float3(0.25,0.25,0.3) : float3(0.2, 0.2, 0.25);
 
                 if (data.g > 0) {
-                    color = sandColor;
+                    color = baseColor;
                 }
 
                 return color;
             }
 
-            float3 renderSplitter(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+            float3 renderSplitter(uint4 data, float3 baseColor, float2 pixelPos) {
+                return baseColor;
             }
 
-            float3 renderCrossroad(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+            float3 renderCrossroad(uint4 data, float3 baseColor, float2 pixelPos) {
+                return baseColor;
             }
 
-            float3 renderMiner(uint4 data, float3 sandColor, float2 pixelPos) {
+            float3 renderMiner(uint4 data, float3 baseColor, float2 pixelPos) {
                 uint timer = data.a >> 2;
 
-                float3 color = float3(0.1, 0.1, 0.1);
-                color *= timer;
+                float2 pos = rotatePosition(pixelPos, data.a);
 
-                if ((data.g > 0) && max(abs(pixelPos.x),abs(pixelPos.y)) < 0.3) {
-                    color = sandColor;
+                float angle = ((atan2(pos.x*2, pos.y*2)/3.14159265)+0.75)/1.5;
+
+                float3 color = (angle + float(timer)/7.0) > 1 ? float3(1, 1, 1) : float3(0.1, 0.1, 0.1);
+
+                if (max(abs(pos.x),abs(pos.y)) < 0.3 || angle < 0 || angle > 1) {
+                    color = baseColor;
                 }
 
                 return color;
             }
 
-            float3 renderPainter(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+            float3 renderPainter(uint4 data, float3 baseColor, float2 pixelPos) {
+                return baseColor;
             }
 
-            float3 renderBin(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+            float3 renderBin(uint4 data, float3 baseColor, float2 pixelPos) {
+                return baseColor;
             }
 
-            float3 renderShippingPoint(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+            float3 renderShippingPoint(uint4 data, float3 baseColor, float2 pixelPos) {
+                return baseColor;
             }
 
-            float3 renderWeightFilter(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+            float3 renderWeightFilter(uint4 data, float3 baseColor, float2 pixelPos) {
+                return baseColor;
             }
 
-            float3 renderColorFilter(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+            float3 renderColorFilter(uint4 data, float3 baseColor, float2 pixelPos) {
+                return baseColor;
             }
 
-            float3 renderSmartFilter(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
+            float3 renderSmartFilter(uint4 data, float3 baseColor, float2 pixelPos) {
+                return baseColor;
             }
 
-            float3 renderGate(uint4 data, float3 sandColor, float2 pixelPos) {
-                return sandColor;
-            }
-
-
-
-            float3 getSandColor(uint sand) {
-                return tex2D(_SandColors, float2(float((sand >> 5) + ((sand & 31) > 15 ? 8 : 0))/16.0, float(sand & 15)/16.0)).rgb;
+            float3 renderGate(uint4 data, float3 baseColor, float2 pixelPos) {
+                return baseColor;
             }
 
             fixed4 frag (v2f i) : SV_Target
@@ -142,34 +161,34 @@ SubShader {
                 uint4 data = uint4(lerp(tex2D(_TexA, i.texcoord), tex2D(_TexB, i.texcoord), _Step)*255.0);
                 float3 col = float3(0,0,0);
 
-                float3 sandColor = getSandColor(data.g);
+                float3 baseColor = getBaseColor(data.r, data.g);
 
                 if (data.b == 0) {
-                    col = renderEmpty(data, sandColor, pixelPos);
+                    col = renderEmpty(data, baseColor, pixelPos);
                 } else if (data.b == 1) {
-                    col = renderWall(data, sandColor, pixelPos);
+                    col = renderWall(data, baseColor, pixelPos);
                 } else if (data.b == 2) {
-                    col = renderConveyor(data, sandColor, pixelPos);
+                    col = renderConveyor(data, baseColor, pixelPos);
                 } else if (data.b == 3) {
-                    col = renderSplitter(data, sandColor, pixelPos);
+                    col = renderSplitter(data, baseColor, pixelPos);
                 } else if (data.b >= 4 && data.b <= 7) {
-                    col = renderCrossroad(data, sandColor, pixelPos);
+                    col = renderCrossroad(data, baseColor, pixelPos);
                 } else if (data.b == 8) {
-                    col = renderMiner(data, sandColor, pixelPos);
+                    col = renderMiner(data, baseColor, pixelPos);
                 } else if (data.b == 9) {
-                    col = renderPainter(data, sandColor, pixelPos);
+                    col = renderPainter(data, baseColor, pixelPos);
                 } else if (data.b == 10) {
-                    col = renderBin(data, sandColor, pixelPos);
+                    col = renderBin(data, baseColor, pixelPos);
                 } else if (data.b == 11) {
-                    col = renderShippingPoint(data, sandColor, pixelPos);
+                    col = renderShippingPoint(data, baseColor, pixelPos);
                 } else if (data.b == 12) {
-                    col = renderWeightFilter(data, sandColor, pixelPos);
+                    col = renderWeightFilter(data, baseColor, pixelPos);
                 } else if (data.b == 13) {
-                    col = renderColorFilter(data, sandColor, pixelPos);
+                    col = renderColorFilter(data, baseColor, pixelPos);
                 } else if (data.b == 14) {
-                    col = renderSmartFilter(data, sandColor, pixelPos);
+                    col = renderSmartFilter(data, baseColor, pixelPos);
                 } else if (data.b == 15) {
-                    col = renderGate(data, sandColor, pixelPos);
+                    col = renderGate(data, baseColor, pixelPos);
                 }
 
                 return fixed4(col.r, col.g, col.b, 1);
