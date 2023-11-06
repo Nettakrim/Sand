@@ -105,26 +105,23 @@ SubShader {
             float3 renderSplitter(uint4 data, float3 baseColor, float2 pixelPos) {
                 float3 color;
 
-                bool isRight = ((data.a >> 2)^(data.a >> 3)) == 0;
-                color = isRight ? float3(0.3, 0.3, 0.3) : float3(0.5, 0.5, 0.5);
+                bool isRight = ((data.a >> 2)&1) == 0;
+                color = float3(0.6, 0.6, 0.6);
 
                 float2 enterPos = rotatePosition(pixelPos, data.a);
                 float2 exitPos = rotatePosition(pixelPos, (data.a&3) ^ (2 | ((data.a >> 1) ^ (data.a >> 2))));
 
-                //if (data.g > 0 && enterPos.y > 0) {
-                //    color = float3(0,0,0);
-                //}
+                bool inner = max(abs(pixelPos.x),abs(pixelPos.y)) < 0.3;
 
-                if (data.g > 0 && enterPos.y > 0) {
-                    color = float3(1,1,1);
-                }
-
-                //if (enterPos.y > -exitPos.y) {
-                //    color = float3(1,1,1);
-                //}
-
-                if (data.g > 0 && max(abs(pixelPos.x),abs(pixelPos.y)) < 0.3) {
-                    color = baseColor;
+                if (data.g > 0) {
+                    if (inner) {
+                        color = baseColor;
+                    }
+                    else if (enterPos.y > -exitPos.y) {
+                        color = abs(enterPos.x) > abs(exitPos.x) ? float3(1, 1, 1) : float3(0.8, 0.8, 0.8);
+                    }
+                } else if (inner) {
+                    color = isRight ? float3(0.1, 0.1, 0.1) : float3(0.3, 0.3, 0.3);
                 }
 
                 return color;
