@@ -107,7 +107,12 @@ SubShader {
             }
 
             float3 renderCrossroad(uint4 data, float3 baseColor, float2 pixelPos) {
-                return baseColor;
+                float3 color;
+                bool state = abs(pixelPos.x) > abs(pixelPos.y);
+
+                color = state ? (data.g == 0 ? float3(0.1, 0.1, 0.1) : baseColor) : (data.a == 0 ? float3(0.2, 0.2, 0.2) : getBaseColor(data.a, data.a));
+                
+                return color;
             }
 
             float3 renderMiner(uint4 data, float3 baseColor, float2 pixelPos) {
