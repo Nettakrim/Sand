@@ -185,15 +185,18 @@ SubShader {
             }
 
             float3 renderWeightFilter(uint4 data, float3 baseColor, float2 pixelPos, uint2 worldPos) {
-                return baseColor;
+                bool state = (abs(pixelPos.x)+abs(pixelPos.y)) < 0.5;
+                return state ? baseColor : 1-((float((data.a-4) & 12)/12.0));
             }
 
             float3 renderColorFilter(uint4 data, float3 baseColor, float2 pixelPos, uint2 worldPos) {
-                return baseColor;
+                bool state = (abs(pixelPos.x)+abs(pixelPos.y)) < 0.5;
+                return state ? baseColor : getBaseColor(0, (data.a & 28) | 1);
             }
 
             float3 renderSmartFilter(uint4 data, float3 baseColor, float2 pixelPos, uint2 worldPos) {
-                return baseColor;
+                bool state = (abs(pixelPos.x)+abs(pixelPos.y)) < 0.5;
+                return state ? baseColor : float3(1,0,1);
             }
 
             float3 renderGate(uint4 data, float3 baseColor, float2 pixelPos, uint2 worldPos) {
