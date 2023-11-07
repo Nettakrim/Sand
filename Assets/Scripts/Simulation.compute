@@ -362,6 +362,10 @@ void CSInit (uint3 id : SV_DispatchThreadID)
         componentData = 0;
     }
 
+    if (y == 1 && x > 5) {
+        component = 10;
+    }
+
 //    if (-x == y && x < 0) {
 //        component = 8;
 //        componentData = 0;

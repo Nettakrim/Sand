@@ -175,7 +175,9 @@ SubShader {
             }
 
             float3 renderBin(uint4 data, float3 baseColor, float2 pixelPos, uint2 worldPos) {
-                return baseColor;
+                float size = 0.2;
+                bool state = ((pixelPos.x < pixelPos.y-size) || (pixelPos.x > pixelPos.y+size)) && ((-pixelPos.x < pixelPos.y-size) || (-pixelPos.x > pixelPos.y+size));
+                return state ? float3(1,0.2,0.2) : float3(1,1,1);
             }
 
             float3 renderShippingPoint(uint4 data, float3 baseColor, float2 pixelPos, uint2 worldPos) {
