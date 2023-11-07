@@ -343,28 +343,30 @@ void CSInit (uint3 id : SV_DispatchThreadID)
     }
 
 
-    if (y == 0 && x < -10 && id.x%5 == 0) {
-        component = 3;
-        componentData = 0;
-    }
+//    if (y == 0 && x < -10 && id.x%5 == 0) {
+//        component = 3;
+//        componentData = 0;
+//    }
 
-    if (x == 0 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
-        component = 9;
-        componentData = 0;
-        ground = 1 + (((uint(x^y)*67)%8)<<2);
-    }
-    if (x == 1 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
-        component = 3;
-        componentData = 0;
-    }
-    if (x == 1 && y > 10 && id.y%5 == 0) {
-        component = 1;
-        componentData = 0;
-    }
-
+//    if (x == 0 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
+//        component = 9;
+//        componentData = 0;
+//        ground = 1 + (((uint(x^y)*67)%8)<<2);
+//    }
+//    if (x == 1 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
+//        component = 3;
+//        componentData = 0;
+//    }
+//    if (x == 1 && y > 10 && id.y%5 == 0) {
+//        component = 1;
+//        componentData = 0;
+//    }
+//
     if (y == 2 && x > 5) {
+    //if ((id.y == 0 || y == 2) && x > 5) {
         component = 15;
-        componentData = ((id.x%3)+1) << 2;
+        //%3 doesnt work but &3 does?
+        componentData = ((id.x%3)) << 2;
         ground = 0;
         sand = 0;
     }
@@ -413,6 +415,30 @@ void CSInit (uint3 id : SV_DispatchThreadID)
 //        component = 11;
 //        componentData = 0;
 //    }
+
+    if (y == -1 && x > 10 && id.x%5 == 0) {
+        component = 3;
+        componentData = 0;
+    }
+
+    if (y == -1 && x > 10 && id.x%5 == 1) {
+        if (id.x%50 == 1) {
+            component = 10;
+        } else {
+            component = 1;
+        }
+        componentData = 0;
+    }
+
+    if (y == 0 && x < -10 && id.x%5 == 1) {
+        component = 15;
+        componentData = (id.x/25) << 2;
+    }
+
+    if (y == 1 && x > 10) {
+        component = 10;
+        componentData = 0;
+    }
 
     Result[id.xy] = encode(uint4(ground, sand, component, componentData));
 }
