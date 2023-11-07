@@ -363,7 +363,7 @@ void CSInit (uint3 id : SV_DispatchThreadID)
     }
 
     if (y == 2 && x > 5) {
-        component = 14;
+        component = 15;
         componentData = ((id.x%3)+1) << 2;
         ground = 0;
         sand = 0;

@@ -200,7 +200,16 @@ SubShader {
             }
 
             float3 renderGate(uint4 data, float3 baseColor, float2 pixelPos, uint2 worldPos) {
-                return baseColor;
+                float3 color;
+
+                float2 pos = rotatePosition(pixelPos, data.a);
+
+                bool inner = (abs(pos.x) < 0.3) && data.g > 0;
+
+                float id = float(data.a >> 2)/64;
+                color = float3(id,id,id);
+
+                return inner ? baseColor : color;
             }
 
             fixed4 frag (v2f i) : SV_Target
