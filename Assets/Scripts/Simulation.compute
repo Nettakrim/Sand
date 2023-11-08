@@ -305,7 +305,7 @@ void CS3x3Start (uint3 id : SV_DispatchThreadID)
     GateBuffer[2] = GateBuffer[0];
     GateBuffer[3] = GateBuffer[1];
     GateBuffer[0] = 0;
-    GateBuffer[1] = 0;
+
     for (int x = 0; x < 24; x++) {
         ShippingBuffer[x] = 0;
     }

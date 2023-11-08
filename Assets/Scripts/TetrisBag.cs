@@ -38,6 +38,7 @@ public class TetrisBag<T>
             if (ready[i]) {
                 if (countdown == 0) {
                     if (disallowRepeats && last == i) {
+                        remaining++;
                         return Get();
                     }
                     last = i;
