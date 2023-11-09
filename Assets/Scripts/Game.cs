@@ -27,6 +27,14 @@ public class Game : MonoBehaviour
     private int[] shipping = new int[24];
     private ComputeBuffer shippingBuffer;
 
+    private int[] mouseCoords = new int[2];
+
+    [SerializeField] private Transform world;
+    private Camera cam;
+
+    int stepThreadsX;
+    int stepThreadsY;
+
     void Start() {
         int width = 256;
         int height = 256;
@@ -49,6 +57,10 @@ public class Game : MonoBehaviour
             new int[]{0,1}, new int[]{1,1}, new int[]{2,1},
             new int[]{0,2}, new int[]{1,2}, new int[]{2,2}
         }, true);
+
+        world.localScale = new Vector3(width, height, 1);
+        cam = Camera.main;
+        cam.orthographicSize = height/2;
 
         Reset();
     }
@@ -76,6 +88,10 @@ public class Game : MonoBehaviour
         computeShader.SetTexture(kernalInit, "Result", texB);
         computeShader.SetInts("Size", size);
         computeShader.Dispatch(kernalInit, texA.width / 8, texA.height / 8, 1);
+        
+        computeShader.GetKernelThreadGroupSizes(kernalStep, out uint x, out uint y, out _);
+        stepThreadsX = Mathf.CeilToInt((texA.width  / 3f) / x)+1;
+        stepThreadsY = Mathf.CeilToInt((texA.height / 3f) / y)+1;
     }
 
     void Update() {
@@ -83,12 +99,20 @@ public class Game : MonoBehaviour
             Reset();
         }
 
+        Vector3 mousePos = cam.ScreenToWorldPoint(Input.mousePosition);
+        mouseCoords[0] = Mathf.FloorToInt(mousePos.x+(size[0]/2));
+        mouseCoords[1] = Mathf.FloorToInt(mousePos.y+(size[1]/2));
+
         if (step) {
             step = false;
             Simulate(texA, texB);
         } else {
             step = true;
             Simulate(texB, texA);
+        }
+
+        if (Input.GetMouseButton(0)) {
+            Debug.Log(mouseCoords[0]+" "+mouseCoords[1]);
         }
     }
 
@@ -130,7 +154,7 @@ public class Game : MonoBehaviour
         computeShader.SetBuffer(kernalStep, "ShippingBuffer", shippingBuffer);
         computeShader.SetInt("Random", Random.Range(int.MinValue, int.MaxValue));
 
-        computeShader.Dispatch(kernalStep, Mathf.CeilToInt(i.width / 3f)+1, Mathf.CeilToInt(i.height / 3f)+1, 1);
+        computeShader.Dispatch(kernalStep, stepThreadsX, stepThreadsY, 1);
     }
 
     // https://forum.unity.com/threads/attempting-to-bind-texture-id-as-uav-the-texture-wasnt-created-with-the-uav-usage-flag-set.820512/
