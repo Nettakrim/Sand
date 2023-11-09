@@ -202,7 +202,7 @@ uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
     return data;
 }
 
-[numthreads(1,1,1)]
+[numthreads(8,8,1)]
 void CSStep (uint3 id : SV_DispatchThreadID)
 {
     uint2 pos = uint2(id.x*3 + PosOffset.x - 1, id.y*3 + PosOffset.y - 1);
@@ -319,8 +319,8 @@ void CSInit (uint3 id : SV_DispatchThreadID)
     uint component = 2;
     uint componentData = 0;
 
-    int x = int(id.x)-Size.x/2;
-    int y = int(id.y)-Size.y/2;
+    int x = int(id.x)-uint(Size.x)/2;
+    int y = int(id.y)-uint(Size.y)/2;
 
     if (x >= 0) {
         if (y >= 0) {

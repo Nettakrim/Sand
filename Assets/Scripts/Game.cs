@@ -32,6 +32,9 @@ public class Game : MonoBehaviour
     [SerializeField] private Transform world;
     private Camera cam;
 
+    int stepThreadsX;
+    int stepThreadsY;
+
     void Start() {
         int width = 256;
         int height = 256;
@@ -85,6 +88,10 @@ public class Game : MonoBehaviour
         computeShader.SetTexture(kernalInit, "Result", texB);
         computeShader.SetInts("Size", size);
         computeShader.Dispatch(kernalInit, texA.width / 8, texA.height / 8, 1);
+        
+        computeShader.GetKernelThreadGroupSizes(kernalStep, out uint x, out uint y, out _);
+        stepThreadsX = Mathf.CeilToInt((texA.width  / 3f) / x)+1;
+        stepThreadsY = Mathf.CeilToInt((texA.height / 3f) / y)+1;
     }
 
     void Update() {
@@ -147,7 +154,7 @@ public class Game : MonoBehaviour
         computeShader.SetBuffer(kernalStep, "ShippingBuffer", shippingBuffer);
         computeShader.SetInt("Random", Random.Range(int.MinValue, int.MaxValue));
 
-        computeShader.Dispatch(kernalStep, Mathf.CeilToInt(i.width / 3f)+1, Mathf.CeilToInt(i.height / 3f)+1, 1);
+        computeShader.Dispatch(kernalStep, stepThreadsX, stepThreadsY, 1);
     }
 
     // https://forum.unity.com/threads/attempting-to-bind-texture-id-as-uav-the-texture-wasnt-created-with-the-uav-usage-flag-set.820512/
