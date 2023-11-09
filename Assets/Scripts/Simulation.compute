@@ -319,8 +319,8 @@ void CSInit (uint3 id : SV_DispatchThreadID)
     uint component = 2;
     uint componentData = 0;
 
-    int x = int(id.x)-128;
-    int y = int(id.y)-128;
+    int x = int(id.x)-Size.x/2;
+    int y = int(id.y)-Size.y/2;
 
     if (x >= 0) {
         if (y >= 0) {
