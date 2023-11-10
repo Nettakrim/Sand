@@ -25,6 +25,10 @@ public class Game : MonoBehaviour
     private int[] shipping = new int[24];
     private ComputeBuffer shippingBuffer;
 
+    [SerializeField] private float[] sandGoals = new float[24];
+    //for some reason setints is weird //https://forum.unity.com/threads/computeshader-setints-failing-or-me-failing.669829/
+    private int[] smartFilterGoals = new int[24*4];
+
     private int[] mouseCoords = new int[2];
 
     [SerializeField] private Transform world;
@@ -34,8 +38,8 @@ public class Game : MonoBehaviour
     int stepThreadsY;
 
     void Start() {
-        int width =  8192*2;
-        int height = 8192*2;
+        int width =  256;
+        int height = 256;
 
         CreateRenderTexture(ref worldTex, width, height);
 
@@ -95,9 +99,9 @@ public class Game : MonoBehaviour
         mouseCoords[0] = Mathf.FloorToInt(mousePos.x+(size[0]/2));
         mouseCoords[1] = Mathf.FloorToInt(mousePos.y+(size[1]/2));
 
-        for (int i = 0; i < 9; i++) {
-            Simulate(worldTex);
-        }
+        //for (int i = 0; i < 9; i++) {
+        Simulate(worldTex);
+        //}
 
         if (Input.GetMouseButton(0)) {
             Debug.Log(mouseCoords[0]+" "+mouseCoords[1]);
@@ -118,6 +122,17 @@ public class Game : MonoBehaviour
         computeShader.SetBuffer(kernal3x3Start, "GateBuffer", gateBuffer);
         computeShader.SetBuffer(kernal3x3Start, "ShippingBuffer", shippingBuffer);
         computeShader.Dispatch(kernal3x3Start, 1, 1, 1);
+
+        float max = 0;
+        foreach (float goal in sandGoals) {
+            if (goal > max) {
+                max = goal;
+            }
+        }
+
+        for (int i = 0; i < sandGoals.Length; i++) {
+            smartFilterGoals[i*4] = max == 0 ? 151 : Mathf.CeilToInt((sandGoals[i]/max)*151);
+        }
     }
 
     void OnCompleteShippingReadBack(AsyncGPUReadbackRequest request) {
@@ -135,6 +150,7 @@ public class Game : MonoBehaviour
         computeShader.SetTexture(kernalStep, "WorldTex", worldTex);
         computeShader.SetInts("PosOffset", offset);
         computeShader.SetInts("Size", size);
+        computeShader.SetInts("SmartFilterGoals", smartFilterGoals);
         computeShader.SetBuffer(kernalStep, "GateBuffer", gateBuffer);
         computeShader.SetBuffer(kernalStep, "ShippingBuffer", shippingBuffer);
         computeShader.SetInt("Random", Random.Range(int.MinValue, int.MaxValue));
