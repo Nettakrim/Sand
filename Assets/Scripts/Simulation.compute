@@ -62,40 +62,6 @@ bool tileFree(uint4 data, int direction) {
     return !(data.g > 0 || data.b == 1 || data.b == 8);
 }
 
-uint4 updateTile(uint4 data, uint2 pos) {
-    //miner: increment 3rd-5th bits, if at max count and theres no sand on the miner, create sand and reset count
-    if (data.b == 8) {
-        if (data.a < 28) data.a += 4;
-        else if (data.g == 0) data.a -= 28;
-
-        if (data.g == 0 && data.a >= 24) {
-            data.g = (data.r&31) | ((hash(pos^uint2(asuint(Random), asuint(Random)))&7) << 5);
-        }
-    }
-
-    //painter: increment 3rd-5th bits, if at max, change sand color and reset count - only do this if sand is on the painter
-    if (data.b == 9 && data.g > 0) {
-        if (data.a < 28) data.a += 4;
-        else {
-            data.a -= 28;
-            data.g = (data.g & ~28) | (data.r & 28);
-        }
-    }
-
-    //gate: if any of the gate type has no sand, that bit is set true
-    if (data.b == 15 && data.g == 0) {
-        InterlockedOr(GateBuffer[data.a >> 7], 1 << ((data.a&127) >> 2));
-    }
-
-    //splitter: flip 3rd bit while sand is on it, this swaps the target direction
-    //also clear 4th bit, since now the direction has been flipped
-    if (data.b == 3 && data.g > 0) {
-        data.a = (data.a^4)&7;
-    }
-
-    return data;
-}
-
 int getTileMovement(uint4 data) {
     //-1 none
     //0  00 right
@@ -200,8 +166,9 @@ uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
     return data;
 }
 
-uint4 simulateTile(uint4 data, uint2 pos) {
+void simulateTile(uint4 data, uint2 pos) {
     bool isCrossroads = data.b >= 4 && data.b <= 7;
+    bool changed = false;
 
     if (isCrossroads) {
         //y axis crossroad
@@ -211,15 +178,44 @@ uint4 simulateTile(uint4 data, uint2 pos) {
             uint4 tileInDirection = getPixel(posInDirection);
 
             if (tileFree(tileInDirection, direction)) {
-                tileInDirection = sandEnteredTile(data.a, direction, tileInDirection);
+                setPixel(posInDirection, sandEnteredTile(data.a, direction, tileInDirection));
+                changed = true;
                 data.a = 0;
             }
-            
-            setPixel(posInDirection, tileInDirection);
         }
     } else {
-        //or normal tile behaviour
-        data = updateTile(data, pos);
+        //or normal tile update behaviour
+        //miner: increment 3rd-5th bits, if at max count and theres no sand on the miner, create sand and reset count
+        if (data.b == 8) {
+            if (data.a < 28) data.a += 4;
+            else if (data.g == 0) data.a -= 28;
+
+            if (data.g == 0 && data.a >= 24) {
+                data.g = (data.r&31) | ((hash(pos^uint2(asuint(Random), asuint(Random)))&7) << 5);
+            }
+            changed = true;
+        }
+
+        //painter: increment 3rd-5th bits, if at max, change sand color and reset count - only do this if sand is on the painter
+        if (data.b == 9 && data.g > 0) {
+            if (data.a < 28) data.a += 4;
+            else {
+                data.a -= 28;
+                data.g = (data.g & ~28) | (data.r & 28);
+            }
+            changed = true;
+        }
+
+        //gate: if any of the gate type has no sand, that bit is set true
+        if (data.b == 15 && data.g == 0) {
+            InterlockedOr(GateBuffer[data.a >> 7], 1 << ((data.a&127) >> 2));
+        }
+
+        //splitter: flip 3rd bit while sand is on it, this swaps the target direction
+        if (data.b == 3 && data.g > 0) {
+            data.a = data.a^4;
+            changed = true;
+        }
     }
 
     if (data.g > 0) {
@@ -231,15 +227,16 @@ uint4 simulateTile(uint4 data, uint2 pos) {
             uint4 tileInDirection = getPixel(posInDirection);
 
             if (tileFree(tileInDirection, direction)) {
-                tileInDirection = sandEnteredTile(data.g, direction, tileInDirection);
+                setPixel(posInDirection, sandEnteredTile(data.g, direction, tileInDirection));
+                changed = true;
                 data.g = 0;
             }
-            
-            setPixel(posInDirection, tileInDirection);
         }
     }
 
-    return data;
+    if (changed) {
+        setPixel(pos, data);
+    }
 }
 
 [numthreads(8,8,1)]
@@ -248,9 +245,7 @@ void CSStep (uint3 id : SV_DispatchThreadID)
     uint2 pos = uint2(id.x*3 + PosOffset.x - 1, id.y*3 + PosOffset.y - 1);
     uint4 current = getPixel(pos);
 
-    current = simulateTile(current, pos);
-
-    setPixel(pos, current);
+    simulateTile(current, pos);
 }
 
 [numthreads(1,1,1)]

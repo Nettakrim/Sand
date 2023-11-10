@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -33,8 +34,8 @@ public class Game : MonoBehaviour
     int stepThreadsY;
 
     void Start() {
-        int width = 256;
-        int height = 256;
+        int width =  8192*2;
+        int height = 8192*2;
 
         CreateRenderTexture(ref worldTex, width, height);
 
@@ -94,7 +95,9 @@ public class Game : MonoBehaviour
         mouseCoords[0] = Mathf.FloorToInt(mousePos.x+(size[0]/2));
         mouseCoords[1] = Mathf.FloorToInt(mousePos.y+(size[1]/2));
 
-        Simulate(worldTex);
+        for (int i = 0; i < 9; i++) {
+            Simulate(worldTex);
+        }
 
         if (Input.GetMouseButton(0)) {
             Debug.Log(mouseCoords[0]+" "+mouseCoords[1]);
