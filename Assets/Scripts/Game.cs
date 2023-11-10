@@ -11,12 +11,9 @@ public class Game : MonoBehaviour
     private int kernal3x3Start;
     private int kernalStep;
 
-    private RenderTexture texA;
-    private RenderTexture texB;
+    private RenderTexture worldTex;
 
     [SerializeField] private Material material;
-
-    private bool step = false;
 
     private int[] size = new int[2];
 
@@ -39,11 +36,9 @@ public class Game : MonoBehaviour
         int width = 256;
         int height = 256;
 
-        CreateRenderTexture(ref texA, width, height);
-        CreateRenderTexture(ref texB, width, height);
+        CreateRenderTexture(ref worldTex, width, height);
 
-        material.SetTexture("_TexA", texA);
-        material.SetTexture("_TexB", texB);
+        material.SetTexture("_WorldTex", worldTex);
         material.SetVector("_TexelSize", new Vector4(1f/width, 1f/height, width, height));
 
         kernalInit = computeShader.FindKernel("CSInit");
@@ -70,13 +65,10 @@ public class Game : MonoBehaviour
         Debug.Log("quitting");
         if (gateBuffer != null) gateBuffer.Release();
         if (shippingBuffer != null) shippingBuffer.Release();
-        texA.Release();
-        texB.Release();
+        worldTex.Release();
     }
 
     void Reset() {
-        step = false;
-
         if (gateBuffer != null) gateBuffer.Release();
         gateBuffer = new ComputeBuffer(4, sizeof(int));
         if (shippingBuffer != null) shippingBuffer.Release();
@@ -84,14 +76,13 @@ public class Game : MonoBehaviour
 
         Start3x3();
 
-        computeShader.SetTexture(kernalInit, "Input", texA);
-        computeShader.SetTexture(kernalInit, "Result", texB);
+        computeShader.SetTexture(kernalInit, "WorldTex", worldTex);
         computeShader.SetInts("Size", size);
-        computeShader.Dispatch(kernalInit, texA.width / 8, texA.height / 8, 1);
+        computeShader.Dispatch(kernalInit, worldTex.width / 8, worldTex.height / 8, 1);
         
         computeShader.GetKernelThreadGroupSizes(kernalStep, out uint x, out uint y, out _);
-        stepThreadsX = Mathf.CeilToInt((texA.width  / 3f) / x)+1;
-        stepThreadsY = Mathf.CeilToInt((texA.height / 3f) / y)+1;
+        stepThreadsX = Mathf.CeilToInt((worldTex.width  / 3f) / x)+1;
+        stepThreadsY = Mathf.CeilToInt((worldTex.height / 3f) / y)+1;
     }
 
     void Update() {
@@ -103,27 +94,19 @@ public class Game : MonoBehaviour
         mouseCoords[0] = Mathf.FloorToInt(mousePos.x+(size[0]/2));
         mouseCoords[1] = Mathf.FloorToInt(mousePos.y+(size[1]/2));
 
-        if (step) {
-            step = false;
-            Simulate(texA, texB);
-        } else {
-            step = true;
-            Simulate(texB, texA);
-        }
+        Simulate(worldTex);
 
         if (Input.GetMouseButton(0)) {
             Debug.Log(mouseCoords[0]+" "+mouseCoords[1]);
         }
     }
 
-    void Simulate(RenderTexture i, RenderTexture o) {
+    void Simulate(RenderTexture world) {
         if (offsets.remaining == 0) {
             Start3x3();
         }
 
-        SimulationStep(i, o, offsets.Get());
-
-        material.SetFloat("_Step", step ? 0 : 1);
+        SimulationStep(world, offsets.Get());
     }
 
     void Start3x3() {
@@ -145,9 +128,8 @@ public class Game : MonoBehaviour
         }
     }
 
-    void SimulationStep(RenderTexture i, RenderTexture o, int[] offset) {
-        computeShader.SetTexture(kernalStep, "Input", i);
-        computeShader.SetTexture(kernalStep, "Result", o);
+    void SimulationStep(RenderTexture world, int[] offset) {
+        computeShader.SetTexture(kernalStep, "WorldTex", worldTex);
         computeShader.SetInts("PosOffset", offset);
         computeShader.SetInts("Size", size);
         computeShader.SetBuffer(kernalStep, "GateBuffer", gateBuffer);

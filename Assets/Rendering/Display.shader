@@ -1,8 +1,6 @@
 Shader "Custom/Display" {
 Properties {
-    _TexA ("TexA", 2D) = "black" {}
-    _TexB ("TexB", 2D) = "black" {}
-    _Step ("Step", float) = 0
+    _WorldTex ("WorldTex", 2D) = "black" {}
     _SandColors ("SandColors", 2D) = "white" {}
     _GroundColors ("GroundColors", 2D) = "white" {}
     _TexelSize("TexelSize", Vector) = (1, 1, 1, 1)
@@ -34,10 +32,8 @@ SubShader {
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
-            sampler2D _TexA;
-            sampler2D _TexB;
-            float4 _TexA_ST;
-            float _Step;
+            sampler2D _WorldTex;
+            float4 _WorldTex_ST;
             sampler2D _SandColors;
             sampler2D _GroundColors;
             float4 _TexelSize;
@@ -48,7 +44,7 @@ SubShader {
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.texcoord = TRANSFORM_TEX(v.texcoord, _TexA);
+                o.texcoord = TRANSFORM_TEX(v.texcoord, _WorldTex);
                 UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
@@ -217,7 +213,7 @@ SubShader {
                 float2 pixelPos = float2(frac(i.texcoord.x*_TexelSize.z)-0.5, frac(i.texcoord.y*_TexelSize.w)-0.5);
                 uint2 worldPos = uint2(uint(i.texcoord.x*_TexelSize.z), uint(i.texcoord.y*_TexelSize.w));
 
-                uint4 data = uint4(lerp(tex2D(_TexA, i.texcoord), tex2D(_TexB, i.texcoord), _Step)*255.0);
+                uint4 data = uint4(tex2D(_WorldTex, i.texcoord)*255.0);
                 float3 col = float3(0,0,0);
 
                 float3 baseColor = getBaseColor(data.r, data.g);
