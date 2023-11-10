@@ -23,49 +23,20 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _AlphaTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _GroundColors:
         m_Texture: {fileID: 2800000, guid: b07641f173f2b2d4586d324c3bbe2083, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _MaskTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _NormalMap:
-        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _SandColors:
         m_Texture: {fileID: 2800000, guid: 17a72414456a65448beb856e2bf7b248, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _TexA:
+    - _WorldTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _TexB:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 0, y: 1}
-        m_Offset: {x: 0, y: 0}
     m_Ints: []
-    m_Floats:
-    - PixelSnap: 0
-    - _EnableExternalAlpha: 0
-    - _Step: 0
-    - _Time: 0
+    m_Floats: []
     m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Flip: {r: 1, g: 1, b: 1, a: 1}
-    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-    - _TexSize: {r: 0.00390625, g: 0.00390625, b: 256, a: 256}
     - _TexelSize: {r: 0.00390625, g: 0.00390625, b: 256, a: 256}
-    - _Time: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

@@ -4,8 +4,7 @@
 
 int Random;
 
-RWTexture2D<float4> Result;
-RWTexture2D<float4> Input;
+RWTexture2D<float4> WorldTex;
 int2 Size;
 int2 PosOffset;
 
@@ -34,21 +33,20 @@ uint4 decode(float4 value) {
 
 uint4 getPixel(uint2 pos) {
     if (pos.x < asuint(Size.x) && pos.y < asuint(Size.x)) {
-        return decode(Input[pos]);
+        return decode(WorldTex[pos]);
     }
     return uint4(0,0,1,0);
 }
 
 void setPixel(uint2 pos, uint4 data) {
     if (pos.x < asuint(Size.x) && pos.y < asuint(Size.y)) {
-        Result[pos] = encode(data);
+        WorldTex[pos] = encode(data);
     }
 }
 
-void copyPixel(uint2 pos) {
-    if (pos.x < asuint(Size.x) && pos.y < asuint(Size.y)) {
-        Result[pos] = Input[pos];
-    }
+uint2 getPosInDirection(uint2 pos, int direction) {
+    uint2 dir = (direction&2) == 0 ? uint2(1,0) : uint2(0,1);
+    return (direction&1) == 0 ? pos + dir : pos - dir;
 }
 
 bool tileFree(uint4 data, int direction) {
@@ -202,99 +200,55 @@ uint4 sandEnteredTile(uint sand, int direction, uint4 data) {
     return data;
 }
 
+uint4 simulateTile(uint4 data, uint2 pos) {
+    bool isCrossroads = data.b >= 4 && data.b <= 7;
+
+    if (isCrossroads) {
+        //y axis crossroad
+        if (data.a > 0) {
+            int direction = ((data.b&2) == 0) ? 2 : 3;
+            uint2 posInDirection = getPosInDirection(pos, direction);
+            uint4 tileInDirection = getPixel(posInDirection);
+
+            if (tileFree(tileInDirection, direction)) {
+                tileInDirection = sandEnteredTile(data.a, direction, tileInDirection);
+                data.a = 0;
+            }
+            
+            setPixel(posInDirection, tileInDirection);
+        }
+    } else {
+        //or normal tile behaviour
+        data = updateTile(data, pos);
+    }
+
+    if (data.g > 0) {
+        //x axis crossroad or normal tile behaviour
+        int direction = isCrossroads ? (((data.a&1) == 0) ? 0 : 1) : getTileMovement(data);
+
+        if (direction >= 0) {
+            uint2 posInDirection = getPosInDirection(pos, direction);
+            uint4 tileInDirection = getPixel(posInDirection);
+
+            if (tileFree(tileInDirection, direction)) {
+                tileInDirection = sandEnteredTile(data.g, direction, tileInDirection);
+                data.g = 0;
+            }
+            
+            setPixel(posInDirection, tileInDirection);
+        }
+    }
+
+    return data;
+}
+
 [numthreads(8,8,1)]
 void CSStep (uint3 id : SV_DispatchThreadID)
 {
     uint2 pos = uint2(id.x*3 + PosOffset.x - 1, id.y*3 + PosOffset.y - 1);
-
-    uint2 rightPos = pos+uint2(1, 0);
-    uint2 leftPos  = pos-uint2(1, 0);
-    uint2 upPos    = pos+uint2(0, 1);
-    uint2 downPos  = pos-uint2(0, 1);
-
     uint4 current = getPixel(pos);
 
-    uint4 right = getPixel(rightPos);
-    uint4 left  = getPixel(leftPos);
-    uint4 up    = getPixel(upPos);
-    uint4 down  = getPixel(downPos);
-
-    //crossroads are calculated seperately
-    if (current.b < 4 || current.b > 7) {
-        current = updateTile(current, pos);
-
-        if (current.g > 0) {
-            int direction = getTileMovement(current);
-
-            if (direction >= 0) {
-                uint4 tileInDirection;
-
-                if (direction == 0)      tileInDirection = right;
-                else if (direction == 1) tileInDirection = left;
-                else if (direction == 2) tileInDirection = up;
-                else if (direction == 3) tileInDirection = down;
-                else tileInDirection = uint4(0,0,1,0);
-
-                if (tileFree(tileInDirection, direction)) {
-                    tileInDirection = sandEnteredTile(current.g, direction, tileInDirection);
-                    current.g = 0;
-                }
-
-                if (direction == 0)      right = tileInDirection;
-                else if (direction == 1) left  = tileInDirection;
-                else if (direction == 2) up    = tileInDirection;
-                else if (direction == 3) down  = tileInDirection;
-            }
-        }
-    } else {
-        //crossroad simulation
-
-        int directions = current.b&3;
-        // 00 - ur
-        // 01 - ul
-        // 10 - dr
-        // 11 - dl
-
-        if (current.g > 0) {
-            //x axis
-            bool positive = (directions&1) == 0;
-            uint4 tileInDirection = positive ? right : left;
-            if (tileFree(tileInDirection, positive ? 0 : 1)) {
-                tileInDirection = sandEnteredTile(current.g, positive ? 0 : 1, tileInDirection);
-                current.g = 0;
-            }
-            if (positive) {
-                right = tileInDirection;
-            } else {
-                left = tileInDirection;
-            }
-        }
-
-        if (current.a > 0) {
-            //y axis
-            bool positive = directions < 2;
-            uint4 tileInDirection = positive ? up : down;
-            if (tileFree(tileInDirection, positive ? 2 : 3)) {
-                tileInDirection = sandEnteredTile(current.a, positive ? 2 : 3, tileInDirection);
-                current.a = 0;
-            }
-            if (positive) {
-                up = tileInDirection;
-            } else {
-                down = tileInDirection;
-            }
-        }
-    }
-
-    copyPixel(uint2(pos.x+uint(1), pos.y+uint(1)));
-    copyPixel(uint2(pos.x+uint(1), pos.y-uint(1)));
-    copyPixel(uint2(pos.x-uint(1), pos.y+uint(1)));
-    copyPixel(uint2(pos.x-uint(1), pos.y-uint(1)));
-
-    setPixel(rightPos, right);
-    setPixel(leftPos, left);
-    setPixel(upPos, up);
-    setPixel(downPos, down);
+    current = simulateTile(current, pos);
 
     setPixel(pos, current);
 }
@@ -365,7 +319,6 @@ void CSInit (uint3 id : SV_DispatchThreadID)
     if (y == 2 && x > 5) {
     //if ((id.y == 0 || y == 2) && x > 5) {
         component = 15;
-        //%3 doesnt work but &3 does?
         componentData = ((id.x%3)) << 2;
         ground = 0;
         sand = 0;
@@ -440,5 +393,5 @@ void CSInit (uint3 id : SV_DispatchThreadID)
         componentData = 0;
     }
 
-    Result[id.xy] = encode(uint4(ground, sand, component, componentData));
+    WorldTex[id.xy] = encode(uint4(ground, sand, component, componentData));
 }
