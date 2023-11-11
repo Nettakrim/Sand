@@ -33,12 +33,15 @@ public class Game : MonoBehaviour
     private int[] mouseCoords = new int[2];
 
     [SerializeField] private Transform world;
-    private Camera cam;
 
     int stepThreadsX;
     int stepThreadsY;
 
-    [SerializeField] private int[] drawData;
+    [SerializeField] private int[] drawData = new int[4];
+
+    [SerializeField] private CameraController cameraController;
+
+    [SerializeField] private int stepsPerFrame;
 
     void Start() {
         int width =  256;
@@ -63,8 +66,7 @@ public class Game : MonoBehaviour
         }, true);
 
         world.localScale = new Vector3(width, height, 1);
-        cam = Camera.main;
-        cam.orthographicSize = height/2;
+        cameraController.SetZoomBounds(width, height);
 
         Reset();
     }
@@ -99,13 +101,13 @@ public class Game : MonoBehaviour
             Reset();
         }
 
-        Vector3 mousePos = cam.ScreenToWorldPoint(Input.mousePosition);
+        Vector3 mousePos = cameraController.GetMousePos();
         mouseCoords[0] = Mathf.FloorToInt(mousePos.x+(size[0]/2));
         mouseCoords[1] = Mathf.FloorToInt(mousePos.y+(size[1]/2));
 
-        //for (int i = 0; i < 9; i++) {
-        Simulate(worldTex);
-        //}
+        for (int i = 0; i < stepsPerFrame; i++) {
+            Simulate(worldTex);
+        }
 
         if (Input.GetMouseButton(0)) {
             Debug.Log(mouseCoords[0]+" "+mouseCoords[1]);

@@ -305,80 +305,30 @@ void CSInit (uint3 id : SV_DispatchThreadID)
     }
 
 
-//    if (y == 0 && x < -10 && id.x%5 == 0) {
-//        component = 3;
-//        componentData = 0;
-//    }
+    if (y == 0 && x < -10 && id.x%5 == 0) {
+        component = 3;
+        componentData = 0;
+    }
 
-//    if (x == 0 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
-//        component = 9;
-//        componentData = 0;
-//        ground = 1 + (((uint(x^y)*67)%8)<<2);
-//    }
-//    if (x == 1 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
-//        component = 3;
-//        componentData = 0;
-//    }
-//    if (x == 1 && y > 10 && id.y%5 == 0) {
-//        component = 1;
-//        componentData = 0;
-//    }
-//
+    if (x == 0 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
+        component = 9;
+        componentData = 0;
+        ground = 1 + (((uint(x^y)*67)%8)<<2);
+    }
+    if (x == 1 && y > 10 && (id.y%5 == 4 || id.y%5 == 1)) {
+        component = 3;
+        componentData = 0;
+    }
+    if (x == 1 && y > 10 && id.y%5 == 0) {
+        component = 1;
+        componentData = 0;
+    }
+
     if (y == 2 && x > 5) {
-    //if ((id.y == 0 || y == 2) && x > 5) {
-        component = 15;
+        component = 3;
         componentData = ((id.x%3)) << 2;
         ground = 0;
         sand = 0;
-    }
-
-//    if (-x == y && x < 0) {
-//        component = 8;
-//        componentData = 0;
-//        ground = 1 + (((id.x/5)%8) << 2);
-//    } else if (-x == y && x > 0) {
-//        component = 8;
-//        componentData = 2;
-//        ground = 1 + (((id.x/5)%8) << 2);
-//    } else {
-//        component = 4;
-//        componentData = 0;
-//    }
-//
-//    if (x > 100 || y > 100) {
-//        component = 3;
-//    }
-
-//    if (x == 0 && y == 0) {
-//        sand = 255;
-//    }
-//    component = 3;
-//    componentData = 0;
-
-//    if (y == 0) {
-//        component = 8;
-//        componentData = 3;
-//        ground = 31;
-//    } else if (y == -10 && x >= 0) {
-//        if (x < 4) {
-//            component = 12;
-//            componentData = x*4;
-//        } else {
-//            component = 13;
-//            componentData = (x-4)*4;
-//        }
-//    } else {
-//        component = 2;
-//        componentData = 3;
-//    }
-
-//    if (y == 0 && x < -10 && id.x%5 == 0) {
-//        component = 11;
-//        componentData = 0;
-//    }
-
-    if (y == 0 && x < -10 && id.x%5 == 0) {
-        component = 14;
     }
 
     WorldTex[id.xy] = encode(uint4(ground, sand, component, componentData));
