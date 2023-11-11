@@ -1,6 +1,7 @@
 #pragma kernel CSInit
 #pragma kernel CS3x3Start
 #pragma kernel CSStep
+#pragma kernel CSDraw
 
 int Random;
 
@@ -12,6 +13,9 @@ RWStructuredBuffer<int> GateBuffer;
 RWStructuredBuffer<int> ShippingBuffer;
 
 uint SmartFilterGoals[24];
+
+uint2 DrawPos;
+uint4 DrawData;
 
 //not sure why:
 //https://discussions.unity.com/t/how-do-int-textures-work-in-computeshaders/246832/2
@@ -261,6 +265,12 @@ void CS3x3Start (uint3 id : SV_DispatchThreadID)
     for (int x = 0; x < 24; x++) {
         ShippingBuffer[x] = 0;
     }
+}
+
+[numthreads(1,1,1)]
+void CSDraw (uint3 id : SV_DispatchThreadID)
+{
+    WorldTex[DrawPos] = encode(DrawData);
 }
 
 [numthreads(8,8,1)]

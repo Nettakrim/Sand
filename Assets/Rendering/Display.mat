@@ -38,5 +38,5 @@ Material:
     m_Ints: []
     m_Floats: []
     m_Colors:
-    - _TexelSize: {r: 0.000061035156, g: 0.000061035156, b: 16384, a: 16384}
+    - _TexelSize: {r: 0.00390625, g: 0.00390625, b: 256, a: 256}
   m_BuildTextureStacks: []

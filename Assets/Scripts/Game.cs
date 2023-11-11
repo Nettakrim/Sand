@@ -11,6 +11,7 @@ public class Game : MonoBehaviour
     private int kernalInit;
     private int kernal3x3Start;
     private int kernalStep;
+    private int kernalDraw;
 
     private RenderTexture worldTex;
 
@@ -37,6 +38,8 @@ public class Game : MonoBehaviour
     int stepThreadsX;
     int stepThreadsY;
 
+    [SerializeField] private int[] drawData;
+
     void Start() {
         int width =  256;
         int height = 256;
@@ -49,6 +52,7 @@ public class Game : MonoBehaviour
         kernalInit = computeShader.FindKernel("CSInit");
         kernal3x3Start = computeShader.FindKernel("CS3x3Start");
         kernalStep = computeShader.FindKernel("CSStep");
+        kernalDraw = computeShader.FindKernel("CSDraw");
 
         size = new int[]{width, height};
 
@@ -105,6 +109,12 @@ public class Game : MonoBehaviour
 
         if (Input.GetMouseButton(0)) {
             Debug.Log(mouseCoords[0]+" "+mouseCoords[1]);
+
+            computeShader.SetTexture(kernalDraw, "WorldTex", worldTex);
+            computeShader.SetInts("DrawPos", mouseCoords);
+            computeShader.SetInts("DrawData", drawData);
+
+            computeShader.Dispatch(kernalDraw, 1, 1, 1);
         }
     }
 
